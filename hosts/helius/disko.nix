@@ -7,11 +7,7 @@
 #   disko.devices.disk.data2.device = "/dev/sdc";
 # }
 
-{ lib, disk ? "/dev/vda", withSwap ? false, swapSize, ... }:
-let
-  diskoHostname = "helius";
-  diskoDisk = "/dev/nvme0n1";
-in {
+{ lib, disk ? "/dev/vda", withSwap ? false, swapSize, ... }: {
   disko.devices = {
     disk.main = {
       type = "disk";
@@ -21,8 +17,8 @@ in {
         partitions = {
           esp = {
             priority = 1;
-            name = "${diskoHostname}ESP";
-            size = "512M";
+            name = "ESP";
+            size = "1G";
             type = "EF00";
             content = {
               type = "filesystem";
