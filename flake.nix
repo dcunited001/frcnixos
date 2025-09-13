@@ -21,12 +21,11 @@
         (self: super: { custom = import ./lib { inherit (nixpkgs) lib; }; });
     in {
 
-      # overlays = import ./overlays { inherit inputs; };
+      overlays = import ./overlays { inherit inputs; };
 
       nixosConfigurations.helius = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         specialArgs = { inherit inputs outputs lib; };
-
         modules = [ ./hosts/helius/configuration.nix ];
       };
     };

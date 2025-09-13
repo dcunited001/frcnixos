@@ -9,14 +9,14 @@ NIXOS_HOST=$(shell hostname)
 
 # make NIXOS_HOST=helius buildthis
 
-.PHONY: buildthis switchthis replthis
-buildthis:
+.PHONY: build switch repl
+build:
 	nixos-rebuild build --flake ".#nixosConfigurations.$(NIXOS_HOST)"
 
-switchthis:
+switch:
 	sudo nixos-rebuild build --flake ".#nixosConfigurations.$(NIXOS_HOST)"
 
-replthis:
+repl:
 	nix repl ".#nixosConfigurations.$(NIXOS_HOST)"
 
 .PHONY:
