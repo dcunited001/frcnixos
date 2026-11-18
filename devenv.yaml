@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://devenv.sh/devenv.schema.json
+inputs:
+  disko:
+    url: github:nix-community/disko
+    inputs:
+      nixpkgs:
+        follows: nixpkgs
+  frc-nix:
+    url: github:frc4451/frc-nix
+    inputs:
+      nixpkgs:
+        follows: nixpkgs
+  git-hooks:
+    url: github:cachix/git-hooks.nix
+    inputs:
+      nixpkgs:
+        follows: nixpkgs
+  rk3588:
+    url: github:0x0013/nixos-rk3588/rkr7.2-pr-integration
+    inputs:
+      nixpkgs:
+        follows: nixpkgs
