@@ -67,6 +67,7 @@
   # ---------------------------------------------
   # Nix
   system.stateVersion = "25.05";
+  nixpkgs = { overlays = [ outputs.overlays.hostapd ]; };
 
   # ---------------------------------------------
   # Gnome
@@ -98,28 +99,6 @@
     XDG_CACHE_HOME = "$HOME/.cache";
     XDG_DATA_HOME = "$HOME/.local/share";
     XDG_STATE_HOME = "$HOME/.local/state";
-  };
-
-  # ---------------------------------------------
-  # VS Code
-  programs.vscode = {
-    enable = true;
-    defaultEditor = false;
-    package = pkgs.vscode.fhs;
-    extensions = with pkgs.vscode-extensions; [
-      bbenoist.nix
-      golang.go
-      twxs.cmake
-      ms-vscode.cpptools
-      redhat.java
-      redhat.vscode-yaml
-      ms-python.python
-      ms-python.debugpy
-      ms-python.vscode-pylance
-      ms-python.isort
-      ms-python.black-formatter
-      vscjava.vscode-java-pack
-    ];
   };
 
   # ---------------------------------------------

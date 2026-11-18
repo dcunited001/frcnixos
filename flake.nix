@@ -6,7 +6,7 @@
   # Flake outputs that other flakes can use
   # flake-schemas, disko
   outputs = { self, nixpkgs, flake-compat, nixos-hardware, flake-schemas, disko
-    , ... }@inputs:
+    , nixos-rk3588, ... }@inputs:
     let
 
       inherit (self) outputs;
@@ -28,6 +28,12 @@
         specialArgs = { inherit inputs outputs lib; };
         modules = [ ./hosts/helius/configuration.nix ];
       };
+
+      nixosConfigurations.theia = {
+        system = "aarch64-linux";
+        specialArgs = { inherit inputs outputs lib; };
+        modules = [ ./hosts/theia/configuration.nix ];
+      };
     };
 
   # Flake inputs
@@ -42,5 +48,8 @@
 
     frc-nix.url = "github:frc4451/frc-nix";
     frc-nix.inputs.nixpkgs.follows = "nixpkgs";
+
+    nixos-rk3588.url = "github:gnull/nixos-rk3588";
+    nixos-rk3588.inputs.nixpkgs.follows = "nixpkgs";
   };
 }
