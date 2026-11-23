@@ -1,9 +1,21 @@
 # [[file:README.org::*Just][Just:1]]
+# generates SSH keys
+
+ssproject := `tomlq '.project.name' secretspec.toml`
+ssdevmach := 'devmach'
+ssdevmachfiles := ".secrets/" + ssproject + "/" + ssdevmach
+
+ss-mach-check:
+    secretspec check --profile "{{ ssdevmach }}"
+ss-mach-pubgen:
+    ssh-keygen -y -f "{{ ssdevmachfiles }}/MACH_INSTALL_KEY" >  "{{ ssdevmachfiles }}/MACH_INSTALL_KEY.pub"
+    ssh-keygen -y -f "{{ ssdevmachfiles }}/MACH_DEPLOY_KEY" >  "{{ ssdevmachfiles }}/MACH_DEPLOY_KEY.pub"
+
 uartdt:=`date +%Y%m%d-%H%M%S`
 uarttype:='uart'
 
-foo dt=uartdt type=uarttype:
-     @echo log/uart/{{type}}.{{dt}}.log
+# foo dt=uartdt type=uarttype:
+#      @echo log/uart/{{type}}.{{dt}}.log
 
 # reboot with `reset`
 

@@ -21,6 +21,7 @@ in
     pkgs.yq
 
     pkgs.minicom
+    pkgs.secretspec
   ];
 
   # languages.python.enable = true;

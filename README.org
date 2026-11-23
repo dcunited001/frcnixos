@@ -11,11 +11,23 @@ devenv inputs add nixos-facter-modules github:nix-community/nixos-facter-modules
 * Just
 
 #+begin_src just :tangle Justfile
+# generates SSH keys
+
+ssproject := `tomlq '.project.name' secretspec.toml`
+ssdevmach := 'devmach'
+ssdevmachfiles := ".secrets/" + ssproject + "/" + ssdevmach
+
+ss-mach-check:
+    secretspec check --profile "{{ ssdevmach }}"
+ss-mach-pubgen:
+    ssh-keygen -y -f "{{ ssdevmachfiles }}/MACH_INSTALL_KEY" >  "{{ ssdevmachfiles }}/MACH_INSTALL_KEY.pub"
+    ssh-keygen -y -f "{{ ssdevmachfiles }}/MACH_DEPLOY_KEY" >  "{{ ssdevmachfiles }}/MACH_DEPLOY_KEY.pub"
+
 uartdt:=`date +%Y%m%d-%H%M%S`
 uarttype:='uart'
 
-foo dt=uartdt type=uarttype:
-     @echo log/uart/{{type}}.{{dt}}.log
+# foo dt=uartdt type=uarttype:
+#      @echo log/uart/{{type}}.{{dt}}.log
 
 # reboot with `reset`
 
@@ -27,6 +39,33 @@ uart-mini type=uarttype dt=uartdt:
 uart-screen type=uarttype dt=uartdt:
     screen -L -Logfile "log/uart/{{ type }}.{{ dt }}.log" "/dev/tty{{ ttydev }}" "{{ baud }}"
 #+end_src
+
+* Devenv
+
+** Secretspec
+
+#+begin_src toml :tangle secretspec.toml :comments no
+#:schema https://secretspec.dev/schema/secretspec.schema.json
+[project]
+name = "frcnixos-test"
+revision = "1.0"
+
+[providers]
+devmach = "file:./.secrets"
+
+[profiles.default]
+MACH_INSTALL_KEY = { description = "Machines Install Key", type = "ssh_private_key", generate = true }
+MACH_DEPLOY_KEY = { description = "Machines Deploy Key", type = "ssh_private_key", generate = true }
+
+[profiles.devmach]
+MACH_INSTALL_KEY = { providers = ["devmach"] }
+MACH_DEPLOY_KEY = { providers = ["devmach"] }
+#+end_src
+  
+** Machines Keys
+
++ installs require root access -- or otherwise require passwordless sudo. I'm
+  not 100% sure on what the exact constraints are, yet.
 
 * Machines
 ** OrangePi
@@ -92,4 +131,3 @@ in
   users.groups.i2c = { };
 }
 #+end_src
-
