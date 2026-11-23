@@ -1,0 +1,16 @@
+#+title: Todo
+
+* Inbox
+
+** Secretspec :secretspec:
+*** TODO setup profiles/sops (or something)
++ [X] just use =file://= for now
+*** TODO setup just tasks for deploy and for key distribution
+*** TODO setup persistent host keys
+
+** SSH
+*** TODO explicit CLI for hosts (dicey when using yubikey)
+
+** ARM
+*** TODO build ARM install image
+*** TODO build ARM deploy image
