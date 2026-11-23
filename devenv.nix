@@ -24,7 +24,7 @@ in
   ];
 
   # languages.python.enable = true;
-  # languages.python = {
+  #   languages.python = {
   # }
 
   # https://devenv.sh/processes/
@@ -58,4 +58,11 @@ in
   # };
   # git-hooks.settings.rust.cargoManifestPath = "./Cargo.toml";
 
+  machines = {
+    theia = {
+      system = "aarch64-linux";
+      target.host = "theia";
+      nixos = import ./nix/machines/theia/server.nix;
+    };
+  };
 }

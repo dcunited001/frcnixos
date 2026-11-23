@@ -23,6 +23,7 @@ AGENTS.md
 devenv.local.nix
 devenv.local.yaml
 .direnv
+.machines/*/facter.json
 
 ### pre-commit
 .pre-commit-config.yaml

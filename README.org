@@ -1,0 +1,95 @@
+#+title: Readme
+
+
+#+begin_src shell
+devenv update # to update locked flake inputs
+
+devenv inputs add nixos-facter-modules github:nix-community/nixos-facter-modules
+#+end_src
+
+
+* Just
+
+#+begin_src just :tangle Justfile
+uartdt:=`date +%Y%m%d-%H%M%S`
+uarttype:='uart'
+
+foo dt=uartdt type=uarttype:
+     @echo log/uart/{{type}}.{{dt}}.log
+
+# reboot with `reset`
+
+baud := '1500000'
+ttydev := 'USB0'
+uart-mini type=uarttype dt=uartdt:
+    minicom -b "{{ baud }}" -D "/dev/tty{{ ttydev }}" -C "log/uart/{{ type }}.{{ dt }}.log"
+
+uart-screen type=uarttype dt=uartdt:
+    screen -L -Logfile "log/uart/{{ type }}.{{ dt }}.log" "/dev/tty{{ ttydev }}" "{{ baud }}"
+#+end_src
+
+* Machines
+** OrangePi
+
+*** Original Install
+
+Needs to install as root in order for =kexec= to work
+
+#+begin_src nix :tangle nix/machines/theia/default.nix :mkdirp t
+{...}:
+
+let
+  boot-loader-systemd = {
+    grub.enable = lib.mkForce false;   
+    systemd-boot = {                   
+      enable = true;                   
+      installDeviceTree = true;        
+    };                                 
+    efi.canTouchEfiVariables = false;
+  };
+  boot-loader-u-boot = {
+    grub.enable = false; # mkForce
+    systemd-boot.enable = false;
+  };
+in
+{
+  services.openssh.enable = true;
+  users.users.root.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAb9WIuASHRVkpqpF5tT5AZoOw5lqlY/ycx1UqsWQH7W openpgp:0xBECF991C"
+  ];
+
+  disko.devices.disk.main = {
+    # device = "/dev/disk/by-id/mmc-A3V014_0xb10b87f2";
+    device = "/dev/disk/by-id/nvme-eui.e8238fa6bf530001001b448b4128b292";
+    type = "disk";
+    content = {
+      type = "gpt";
+      partitions = {
+        ESP = {
+          size = "512M";
+          type = "EF00";
+          content = {
+            type = "filesystem";
+            format = "vfat";
+            mountpoint = "/boot";
+          };
+        };
+        root = {
+          size = "30%";
+          content = {
+            type = "filesystem";
+            format = "ext4";
+            mountpoint = "/";
+          };
+        };
+      };
+    };
+  };
+
+  # i2c
+  services.ddccontrol.enable = true;
+  boot.kernelModules = [ "i2c_dev" ];
+  users.groups.i2c = { };
+}
+#+end_src
+
