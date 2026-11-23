@@ -54,12 +54,11 @@ revision = "1.0"
 devmach = "file:./.secrets"
 
 [profiles.default]
-MACH_INSTALL_KEY = { description = "Machines Install Key", type = "ssh_private_key", generate = true }
-MACH_DEPLOY_KEY = { description = "Machines Deploy Key", type = "ssh_private_key", generate = true }
+FOO = { description = "placeholder", required = false }
 
 [profiles.devmach]
-MACH_INSTALL_KEY = { providers = ["devmach"] }
-MACH_DEPLOY_KEY = { providers = ["devmach"] }
+MACH_INSTALL_KEY = { description = "Machines Install Key", type = "ssh_private_key", generate = true, providers = ["devmach"] }
+MACH_DEPLOY_KEY = { description = "Machines Deploy Key", type = "ssh_private_key", generate = true, providers = ["devmach"] }
 #+end_src
   
 ** Machines Keys
