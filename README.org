@@ -61,11 +61,28 @@ MACH_INSTALL_KEY = { description = "Machines Install Key", type = "ssh_private_k
 MACH_DEPLOY_KEY = { description = "Machines Deploy Key", type = "ssh_private_key", generate = true, providers = ["devmach"] }
 #+end_src
   
+** SSH
+
+#+begin_src ssh-config :tangle .ssh/config :mkdirp yes
+Include ~/.ssh/config
+
+Host theiainstall
+  HostName 1.2.3.4
+  IdentitiesOnly yes
+  User root
+  IdentityFile .secrets/frcnixos-test/devmach/MACH_INSTALL_KEY.pub
+
+# using root for now...
+Host theia
+  IdentitiesOnly yes
+  User root
+  IdentityFile .secrets/frcnixos-test/devmach/MACH_DEPLOY_KEY.pub
+#+end_src
+
 ** Machines Keys
 
 + installs require root access -- or otherwise require passwordless sudo. I'm
   not 100% sure on what the exact constraints are, yet.
-
 * Machines
 ** OrangePi
 
