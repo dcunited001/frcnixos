@@ -22,7 +22,7 @@ in
 {
   services.openssh.enable = true;
   users.users.root.openssh.authorizedKeys.keys = [
-    config.secretspec.secrets.MACH_DEPLOY_PUB
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOgQVDli1owQsEXoQ/94sp8Dm87S4mONeBf5DArT/V+i"
   ];
 
   # i2c

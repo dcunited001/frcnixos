@@ -8,7 +8,7 @@
 }: {
   imports = [ ./configuration.nix ];
   users.users.root.openssh.authorizedKeys.keys = lib.mkForce [
-    config.secretspec.secrets.MACH_INSTALL_PUB
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG1KSX/0Kcoc70rGum3bLz9jXtscpOaV1KNarQ24jPR+"
   ];
 }
 # Installer:1 ends here
