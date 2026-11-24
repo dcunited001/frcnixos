@@ -97,16 +97,16 @@
     };
   };
 
-  # disko.devices.disk.data = {
-  #   device = "/dev/disk/by-id/mmc-A3V014_0xb10b87f2";
-  #   type = "disk";
+  disko.devices.disk.data = {
+    device = "/dev/disk/by-id/mmc-A3V014_0xb10b87f2";
+    type = "disk";
 
-  #   content = {
-  #     type = "gpt";
-  #     partitions = {
+    content = {
+      type = "gpt";
+      partitions = {
 
-  #     };
-  #   };
-  # };
+      };
+    };
+  };
 }
 # Disko:1 ends here

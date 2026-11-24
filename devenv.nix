@@ -69,7 +69,17 @@ in
         "IdentitiesOnly=yes"
       ];
       # [ "-o" "UserKnownHostsFile=/absolute/path" ];
-      nixos = import ./nix/machines/theia/default.nix;
+      nixos = import ./nix/machines/theia/configuration.nix;
+    };
+    theia-install = {
+      system = "aarch64-linux";
+      target.host = "theia";
+      target.sshOpts = [
+        "-o"
+        "IdentitiesOnly=yes"
+      ];
+      # [ "-o" "UserKnownHostsFile=/absolute/path" ];
+      nixos = import ./nix/machines/theia/installer.nix;
     };
   };
 }

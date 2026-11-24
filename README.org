@@ -158,7 +158,17 @@ in
         "IdentitiesOnly=yes"
       ];
       # [ "-o" "UserKnownHostsFile=/absolute/path" ];
-      nixos = import ./nix/machines/theia/default.nix;
+      nixos = import ./nix/machines/theia/configuration.nix;
+    };
+    theia-install = {
+      system = "aarch64-linux";
+      target.host = "theia";
+      target.sshOpts = [
+        "-o"
+        "IdentitiesOnly=yes"
+      ];
+      # [ "-o" "UserKnownHostsFile=/absolute/path" ];
+      nixos = import ./nix/machines/theia/installer.nix;
     };
   };
 }
@@ -171,7 +181,7 @@ in
 
 Needs to install as root in order for =kexec= to work
 
-#+begin_src nix :tangle nix/machines/theia/default.nix :mkdirp t
+#+begin_src nix :tangle nix/machines/theia/configuration.nix :mkdirp t
 {
   pkgs,
   lib,
@@ -195,7 +205,7 @@ in
 {
   services.openssh.enable = true;
   users.users.root.openssh.authorizedKeys.keys = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAb9WIuASHRVkpqpF5tT5AZoOw5lqlY/ycx1UqsWQH7W openpgp:0xBECF991C"
+    config.secretspec.secrets.MACH_DEPLOY_PUB
   ];
 
   # i2c
@@ -205,7 +215,24 @@ in
 }
 #+end_src
 
-**** Disko
+**** Installer
+
+#+begin_src nix :tangle nix/machines/theia/installer.nix :mkdirp t
+{
+  pkgs,
+  lib,
+  inputs,
+  config,
+  ...
+}: {
+  imports = [ ./configuration.nix ];
+  users.users.root.openssh.authorizedKeys.keys = lib.mkForce [
+    config.secretspec.secrets.MACH_INSTALL_PUB
+  ];
+}
+#+end_src
+
+***** Disko
 
 #+begin_src nix :tangle nix/machines/theia/disko.nix :mkdirp t
 {
@@ -306,16 +333,76 @@ in
     };
   };
 
-  # disko.devices.disk.data = {
-  #   device = "/dev/disk/by-id/mmc-A3V014_0xb10b87f2";
-  #   type = "disk";
+  disko.devices.disk.data = {
+    device = "/dev/disk/by-id/mmc-A3V014_0xb10b87f2";
+    type = "disk";
 
-  #   content = {
-  #     type = "gpt";
-  #     partitions = {
+    content = {
+      type = "gpt";
+      partitions = {
 
-  #     };
-  #   };
-  # };
+      };
+    };
+  };
 }
 #+end_src
+
+**** Config
+
+Tools
+
+#+begin_src nix :tangle nix/machines/theia/tools.nix :mkdirp t
+{ pkgs, ... }:
+{
+  environment.systemPackages = with pkgs; [
+    pgpdump
+    parted
+    cryptsetup
+
+    yubikey-manager
+    yubikey-personalization
+    yubico-piv-tool
+
+    # Testing
+    ent
+    pwgen
+    rng-tools
+
+    cfssl
+    pcsc-tools
+    tmux
+    htop
+
+    btrfs-progs
+    btrfs-list
+
+    tree
+    emacs
+    neovim
+    vim
+    nixd
+    # nh
+    nixfmt
+    vim
+    jq
+    yq
+    jc
+    sqlite
+    gnumake
+    tmux
+    screen
+    ripgrep
+    fd
+    pass
+    age
+    age-plugin-yubikey
+    age-plugin-tpm
+    agenix-cli
+    sops
+    p7zip
+    unzip
+    socat
+  ];
+}
+#+end_src
+
