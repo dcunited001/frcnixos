@@ -1,6 +1,10 @@
 # [[file:../../../README.org::*Original Install][Original Install:1]]
-{...}:
-
+{
+  pkgs,
+  lib,
+  inputs,
+  ...
+}:
 let
   boot-loader-systemd = {
     grub.enable = lib.mkForce false;   

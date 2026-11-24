@@ -83,6 +83,84 @@ Host theia
 
 + installs require root access -- or otherwise require passwordless sudo. I'm
   not 100% sure on what the exact constraints are, yet.
+
+
+** Config
+
+#+begin_src nix :tangle devenv.nix
+{
+  pkgs,
+  lib,
+  config,
+  inputs,
+  ...
+}:
+let
+  foo = "bar";
+in
+{
+  # https://github.com/meillaya/kernscope/blob/1c69ae251e3c22c3189d8a2e04cc5b15ea8624c6/devenv.nix
+
+  # https://devenv.sh/packages
+  packages = [
+    pkgs.git
+    pkgs.just
+    pkgs.pkg-config
+    pkgs.libxml2
+    pkgs.jq
+    pkgs.yq
+    pkgs.tomlq
+    
+    pkgs.minicom
+    pkgs.secretspec
+  ];
+  # languages.python.enable = true;
+  #   languages.python = {
+  # }
+
+  # https://devenv.sh/processes/
+  # processes.dev.exec = "${lib.getExe pkgs.watchexec} -n -- ls -la";
+
+  scripts.hello.exec = ''
+    echo hello from $GREET
+  '';
+
+  enterShell = ''
+    hello
+    git --version
+  '';
+
+  # tasks = {
+  #   "myproj:setup".exec = "mytool build";
+  #   "devenv:enterShell".after = [ "myproj:setup" ];
+  # };
+
+  enterTest = ''
+    echo "Running tests"
+    git --version | grep --color=auto "${pkgs.git.version}"
+  '';
+
+  # git-hooks.hooks = {
+  #   clippy = {
+  #     enable = true;
+  #     settings.offline = false;
+  #     extraPackages = [ pkgs.openssl ];
+  #   };
+  # };
+  # git-hooks.settings.rust.cargoManifestPath = "./Cargo.toml";
+
+  machines = {
+    theia = {
+      system = "aarch64-linux";
+      target.host = "theia";
+      target.sshOpts = [ "-o" "IdentitiesOnly=yes" ];
+      # [ "-o" "UserKnownHostsFile=/absolute/path" ]u
+      nixos = import ./nix/machines/theia/default.nix;
+    };
+  };
+}
+#+end_src
+
 * Machines
 ** OrangePi
 
@@ -91,8 +169,12 @@ Host theia
 Needs to install as root in order for =kexec= to work
 
 #+begin_src nix :tangle nix/machines/theia/default.nix :mkdirp t
-{...}:
-
+{
+  pkgs,
+  lib,
+  inputs,
+  ...
+}:
 let
   boot-loader-systemd = {
     grub.enable = lib.mkForce false;   

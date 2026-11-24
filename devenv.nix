@@ -1,3 +1,4 @@
+# [[file:README.org::*Config][Config:1]]
 {
   pkgs,
   lib,
@@ -19,11 +20,11 @@ in
     pkgs.libxml2
     pkgs.jq
     pkgs.yq
-
+    pkgs.tomlq
+    
     pkgs.minicom
     pkgs.secretspec
   ];
-
   # languages.python.enable = true;
   #   languages.python = {
   # }
@@ -36,8 +37,8 @@ in
   '';
 
   enterShell = ''
-    hello         # Run scripts directly
-    git --version # Use packages
+    hello
+    git --version
   '';
 
   # tasks = {
@@ -63,7 +64,10 @@ in
     theia = {
       system = "aarch64-linux";
       target.host = "theia";
-      nixos = import ./nix/machines/theia/server.nix;
+      target.sshOpts = [ "-o" "IdentitiesOnly=yes" ];
+      # [ "-o" "UserKnownHostsFile=/absolute/path" ]u
+      nixos = import ./nix/machines/theia/default.nix;
     };
   };
 }
+# Config:1 ends here
