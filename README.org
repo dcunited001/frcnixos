@@ -110,7 +110,7 @@ in
     pkgs.jq
     pkgs.yq
     pkgs.tomlq
-    
+
     pkgs.minicom
     pkgs.secretspec
   ];
@@ -153,8 +153,11 @@ in
     theia = {
       system = "aarch64-linux";
       target.host = "theia";
-      target.sshOpts = [ "-o" "IdentitiesOnly=yes" ];
-      # [ "-o" "UserKnownHostsFile=/absolute/path" ]u
+      target.sshOpts = [
+        "-o"
+        "IdentitiesOnly=yes"
+      ];
+      # [ "-o" "UserKnownHostsFile=/absolute/path" ];
       nixos = import ./nix/machines/theia/default.nix;
     };
   };
@@ -177,11 +180,11 @@ Needs to install as root in order for =kexec= to work
 }:
 let
   boot-loader-systemd = {
-    grub.enable = lib.mkForce false;   
-    systemd-boot = {                   
-      enable = true;                   
-      installDeviceTree = true;        
-    };                                 
+    grub.enable = lib.mkForce false;
+    systemd-boot = {
+      enable = true;
+      installDeviceTree = true;
+    };
     efi.canTouchEfiVariables = false;
   };
   boot-loader-u-boot = {
@@ -195,8 +198,24 @@ in
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAb9WIuASHRVkpqpF5tT5AZoOw5lqlY/ycx1UqsWQH7W openpgp:0xBECF991C"
   ];
 
+  # i2c
+  services.ddccontrol.enable = true;
+  boot.kernelModules = [ "i2c_dev" ];
+  users.groups.i2c = { };
+}
+#+end_src
+
+**** Disko
+
+#+begin_src nix :tangle nix/machines/theia/disko.nix :mkdirp t
+{
+  pkgs,
+  lib,
+  inputs,
+  ...
+}:
+{
   disko.devices.disk.main = {
-    # device = "/dev/disk/by-id/mmc-A3V014_0xb10b87f2";
     device = "/dev/disk/by-id/nvme-eui.e8238fa6bf530001001b448b4128b292";
     type = "disk";
     content = {
@@ -209,23 +228,94 @@ in
             type = "filesystem";
             format = "vfat";
             mountpoint = "/boot";
+            mountOptions = [ "umask=0077" ];
           };
         };
         root = {
-          size = "30%";
+          size = "75%";
           content = {
-            type = "filesystem";
-            format = "ext4";
-            mountpoint = "/";
+            type = "btrfs";
+            extraArgs = [ "-f" ]; # Override existing partition
+            subvolumes = {
+              "/@" = {
+                mountpoint = "/";
+                mountOptions = [
+                  "compress=zstd"
+                ];
+              };
+              "/@/home" = {
+                mountpoint = "/home";
+                mountOptions = [
+                  "compress=zstd"
+                ];
+              };
+              "/@/nix" = {
+                mountpoint = "/nix";
+                mountOptions = [
+                  "compress=zstd"
+                  "noatime"
+                ];
+              };
+              "/@/var" = {
+                mountpoint = "/var";
+                mountOptions = [
+                  "compress=zstd"
+                  "noatime"
+                ];
+              };
+              "/@/var/cache" = {
+                mountpoint = "/var/cache";
+                mountOptions = [
+                  "compress=zstd"
+                  "noatime"
+                ];
+              };
+              "/@/var/tmp" = {
+                mountpoint = "/var/tmp";
+                mountOptions = [
+                  "compress=zstd"
+                  "noatime"
+                ];
+              };
+              "/@/var/log" = {
+                mountpoint = "/var/log";
+                mountOptions = [
+                  "compress=zstd"
+                  "noatime"
+                ];
+              };
+              "/@/gnu" = {
+                mountOptions = [
+                  "compress=zstd"
+                  "noatime"
+                ];
+                mountpoint = "/gnu";
+              };
+              "/@/swap" = {
+                mountpoint = "/.swapvol";
+                swap = {
+                  swapfile.size = "64M";
+                  swapfile2.size = "64M";
+                  swapfile2.path = "rel-path";
+                };
+              };
+            };
           };
         };
       };
     };
   };
 
-  # i2c
-  services.ddccontrol.enable = true;
-  boot.kernelModules = [ "i2c_dev" ];
-  users.groups.i2c = { };
+  # disko.devices.disk.data = {
+  #   device = "/dev/disk/by-id/mmc-A3V014_0xb10b87f2";
+  #   type = "disk";
+
+  #   content = {
+  #     type = "gpt";
+  #     partitions = {
+
+  #     };
+  #   };
+  # };
 }
 #+end_src

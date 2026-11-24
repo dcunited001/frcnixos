@@ -21,7 +21,7 @@ in
     pkgs.jq
     pkgs.yq
     pkgs.tomlq
-    
+
     pkgs.minicom
     pkgs.secretspec
   ];
@@ -64,8 +64,11 @@ in
     theia = {
       system = "aarch64-linux";
       target.host = "theia";
-      target.sshOpts = [ "-o" "IdentitiesOnly=yes" ];
-      # [ "-o" "UserKnownHostsFile=/absolute/path" ]u
+      target.sshOpts = [
+        "-o"
+        "IdentitiesOnly=yes"
+      ];
+      # [ "-o" "UserKnownHostsFile=/absolute/path" ];
       nixos = import ./nix/machines/theia/default.nix;
     };
   };
