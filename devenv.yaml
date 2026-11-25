@@ -20,8 +20,9 @@ inputs:
     inputs:
       nixpkgs:
         follows: nixpkgs
-  rk3588:
-    url: github:0x0013/nixos-rk3588/rkr7.2-pr-integration
+  nixos-rk3588:
+    # url: github:0x0013/nixos-rk3588/rkr7.2-pr-integration
+    url: git+file:///data/ecto/nixos/iot/rockchip/nixos-rk3588-2?branch=rkr7.2-pr-integration
     inputs:
       nixpkgs:
         follows: nixpkgs
