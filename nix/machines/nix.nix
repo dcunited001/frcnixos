@@ -6,5 +6,61 @@
       allowUnfree = true;
     };
   };
+  
+  nix.settings = {
+    allowed-users = [ "dc" ];
+    trusted-users = [ "dc" ];
+  };
+
+  nixpkgs.config = {
+    allowBroken = true;
+    allowUnfree = true;
+  };
+
+  # nix-store --gc --print-roots
+  nix.gc = {
+    automatic = false; # use nh clean
+    options = "--delete-older-than 30d";
+    persistent = true;
+    randomizedDelaySec = "60min";
+  };
+  nix.settings = {
+    auto-optimise-store = true;
+
+    connect-timeout = 5;
+    log-lines = 25;
+    # min-free = 128000000; # 128MB
+    # max-free = 1000000000; # 1GB
+
+    experimental-features = lib.mkDefault [
+      "nix-command"
+      "flakes"
+    ];
+
+    builders-use-substitutes = true;
+    fallback = true;
+
+    allowed-users = [
+      "root"
+      "@wheel"
+      "@builders"
+    ];
+    trusted-users = [ "@wheel" ]; # root was implicit here
+    substituters = [
+      "https://hyprland.cachix.org"
+      "https://cache.nixos.org"
+      "https://nix-community.cachix.org"
+    ];
+    trusted-substituters = [
+      "https://hyprland.cachix.org"
+      "https://cache.nixos.org"
+      "https://nix-community.cachix.org"
+    ];
+    trusted-public-keys = [
+      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+    ];
+  };
+
 };
 # Nix:1 ends here

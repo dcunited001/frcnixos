@@ -166,10 +166,12 @@ Host theia
       pkgsKernel = import inputs.nixpkgs { system = targetSystem; };
     in {
       system = targetSystem;
-      specialArgs.rk3588 = {
-        inherit (inputs) nixpkgs;
-        inherit pkgsKernel;
-      };
+
+      # doesn't work
+      # specialArgs.rk3588 = {
+      #   inherit (inputs) nixpkgs;
+      #   inherit pkgsKernel;
+      # };
 
       target.host = "root@theia";
       target.sshOpts = [
@@ -188,25 +190,43 @@ Host theia
           ./nix/machines/theia/net.nix
           ./nix/machines/theia/ssh.nix
           ./nix/machines/theia/term.nix
+          ./nix/machines/users/dc.nix
+        ];
+        services.openssh.enable = true;
+        users.users.root.openssh.authorizedKeys.keys = [
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOgQVDli1owQsEXoQ/94sp8Dm87S4mONeBf5DArT/V+i"
         ];
       };
-      services.openssh.enable = true;
-      users.users.root.openssh.authorizedKeys.keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOgQVDli1owQsEXoQ/94sp8Dm87S4mONeBf5DArT/V+i"
-      ];
     };
-    theia-install = {
+    theia-install = let
+      targetSystem = "aarch64-linux";
+      pkgsKernel = import inputs.nixpkgs { system = targetSystem; };
+    in {
       system = "aarch64-linux";
       target.host = "root@theia";
       target.sshOpts = [
         "-o"
         "IdentitiesOnly=yes"
       ];
-      # [ "-o" "UserKnownHostsFile=/absolute/path" ];
-      nixos = import ./nix/machines/theia/installer.nix;
-      users.users.root.openssh.authorizedKeys.keys = lib.mkForce [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG1KSX/0Kcoc70rGum3bLz9jXtscpOaV1KNarQ24jPR+"
-      ];
+      nixos = {
+        _module.args.rk3588 = { inherit (inputs) nixpkgs; inherit pkgsKernel; };
+        imports = [
+          inputs.nixos-rk3588.nixosModules.boards.orangepi5plus.core
+          ./nix/machines/serial.nix
+          ./nix/machines/ssh.nix
+          ./nix/machines/tools.nix
+
+          ./nix/machines/theia/disko.nix
+          ./nix/machines/theia/net.nix
+          ./nix/machines/theia/ssh.nix
+          ./nix/machines/theia/term.nix
+          ./nix/machines/users/dc.nix
+        ];
+        services.openssh.enable = true;
+        users.users.root.openssh.authorizedKeys.keys = [
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG1KSX/0Kcoc70rGum3bLz9jXtscpOaV1KNarQ24jPR+"
+        ];
+      };
     };
   };
 }
@@ -320,6 +340,61 @@ OpenSSH
   ];
 };
 #+end_src
+
+*** Users
+
+#+begin_src nix :tangle nix/machines/users/dc.nix :mkdirp yes
+{ pkgs, ... }: {
+
+  users.groups = {
+    dc = {
+      name = "dc";
+      gid = 1000;
+    };
+  };
+
+  users.users.dc = {
+    uid = 1000;
+    group = "dc";
+    extraGroups = [
+      "wheel"
+      "podman"
+      "networkmanager"
+      "docker"
+      "i2c"
+      "audio"
+      "plugdev"
+      "render"
+      "video"
+    ];
+    isNormalUser = true;
+    # continue running containers after logout
+    linger = true;
+
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAb9WIuASHRVkpqpF5tT5AZoOw5lqlY/ycx1UqsWQH7W"
+    ];
+
+
+    # startUGid = (1000000 + (n * lib.custom.pow (2 16)));
+    subUidRanges = [
+      {
+        startUid = 1000000;
+        count = 65536;
+      }
+    ];
+    subGidRanges = [
+      {
+        startGid = 1000000;
+        count = 65536;
+      }
+    ];
+  };
+
+}
+#+end_src
+
+
 
 *** Disko
 
@@ -456,9 +531,64 @@ Nix
       allowUnfree = true;
     };
   };
+
+  nix.settings = {
+    allowed-users = [ "dc" ];
+    trusted-users = [ "dc" ];
+  };
+
+  nixpkgs.config = {
+    allowBroken = true;
+    allowUnfree = true;
+  };
+
+  # nix-store --gc --print-roots
+  nix.gc = {
+    automatic = false; # use nh clean
+    options = "--delete-older-than 30d";
+    persistent = true;
+    randomizedDelaySec = "60min";
+  };
+  nix.settings = {
+    auto-optimise-store = true;
+
+    connect-timeout = 5;
+    log-lines = 25;
+    # min-free = 128000000; # 128MB
+    # max-free = 1000000000; # 1GB
+
+    experimental-features = lib.mkDefault [
+      "nix-command"
+      "flakes"
+    ];
+
+    builders-use-substitutes = true;
+    fallback = true;
+
+    allowed-users = [
+      "root"
+      "@wheel"
+      "@builders"
+    ];
+    trusted-users = [ "@wheel" ]; # root was implicit here
+    substituters = [
+      "https://hyprland.cachix.org"
+      "https://cache.nixos.org"
+      "https://nix-community.cachix.org"
+    ];
+    trusted-substituters = [
+      "https://hyprland.cachix.org"
+      "https://cache.nixos.org"
+      "https://nix-community.cachix.org"
+    ];
+    trusted-public-keys = [
+      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      "hyprland.cachix.org-1:a7pgxzMz7+chwVL3/pzj6jIBMioiJM7ypFP8PwtkuGc="
+    ];
+  };
+
 };
 #+end_src
-
 
 *** Serial
 
@@ -548,53 +678,56 @@ Serial
 { pkgs, ... }:
 {
   environment.systemPackages = with pkgs; [
-    pgpdump
+    # no gui yet
+    # emacs
+    # neovim
+    vim
+    htop
+    tmux
+    minicom
+    screen
+    gnumake
+    gdb
+
+    ripgrep
+    fd
+
     parted
     cryptsetup
-
-    yubikey-manager
-    yubikey-personalization
-    yubico-piv-tool
-
-    # Testing
-    ent
-    pwgen
-    rng-tools
-
-    cfssl
-    pcsc-tools
-    tmux
-    htop
-
     btrfs-progs
     btrfs-list
 
+    p7zip
+    unzip
+    # diskonaut-ng
+
     tree
-    emacs
-    neovim
-    vim
-    nixd
+    # nixd
     # nh
-    nixfmt
-    vim
+    # nixfmt
     jq
     yq
     jc
     sqlite
-    gnumake
-    tmux
-    screen
-    ripgrep
-    fd
-    pass
-    age
-    age-plugin-yubikey
-    age-plugin-tpm
-    agenix-cli
-    sops
-    p7zip
-    unzip
+
     socat
+
+    pass
+    # age
+    # age-plugin-yubikey
+    # age-plugin-tpm
+    # agenix-cli
+    sops
+
+    # pgpdump
+    yubikey-manager
+    yubikey-personalization
+    yubico-piv-tool
+    ent
+    pwgen
+    rng-tools
+    cfssl
+    pcsc-tools
   ];
 }
 #+end_src

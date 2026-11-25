@@ -62,10 +62,12 @@
       pkgsKernel = import inputs.nixpkgs { system = targetSystem; };
     in {
       system = targetSystem;
-      specialArgs.rk3588 = {
-        inherit (inputs) nixpkgs;
-        inherit pkgsKernel;
-      };
+
+      # doesn't work
+      # specialArgs.rk3588 = {
+      #   inherit (inputs) nixpkgs;
+      #   inherit pkgsKernel;
+      # };
 
       target.host = "root@theia";
       target.sshOpts = [
@@ -84,25 +86,43 @@
           ./nix/machines/theia/net.nix
           ./nix/machines/theia/ssh.nix
           ./nix/machines/theia/term.nix
+          ./nix/machines/users/dc.nix
+        ];
+        services.openssh.enable = true;
+        users.users.root.openssh.authorizedKeys.keys = [
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOgQVDli1owQsEXoQ/94sp8Dm87S4mONeBf5DArT/V+i"
         ];
       };
-      services.openssh.enable = true;
-      users.users.root.openssh.authorizedKeys.keys = [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOgQVDli1owQsEXoQ/94sp8Dm87S4mONeBf5DArT/V+i"
-      ];
     };
-    theia-install = {
+    theia-install = let
+      targetSystem = "aarch64-linux";
+      pkgsKernel = import inputs.nixpkgs { system = targetSystem; };
+    in {
       system = "aarch64-linux";
       target.host = "root@theia";
       target.sshOpts = [
         "-o"
         "IdentitiesOnly=yes"
       ];
-      # [ "-o" "UserKnownHostsFile=/absolute/path" ];
-      nixos = import ./nix/machines/theia/installer.nix;
-      users.users.root.openssh.authorizedKeys.keys = lib.mkForce [
-        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG1KSX/0Kcoc70rGum3bLz9jXtscpOaV1KNarQ24jPR+"
-      ];
+      nixos = {
+        _module.args.rk3588 = { inherit (inputs) nixpkgs; inherit pkgsKernel; };
+        imports = [
+          inputs.nixos-rk3588.nixosModules.boards.orangepi5plus.core
+          ./nix/machines/serial.nix
+          ./nix/machines/ssh.nix
+          ./nix/machines/tools.nix
+
+          ./nix/machines/theia/disko.nix
+          ./nix/machines/theia/net.nix
+          ./nix/machines/theia/ssh.nix
+          ./nix/machines/theia/term.nix
+          ./nix/machines/users/dc.nix
+        ];
+        services.openssh.enable = true;
+        users.users.root.openssh.authorizedKeys.keys = [
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG1KSX/0Kcoc70rGum3bLz9jXtscpOaV1KNarQ24jPR+"
+        ];
+      };
     };
   };
 }

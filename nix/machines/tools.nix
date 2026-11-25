@@ -2,53 +2,56 @@
 { pkgs, ... }:
 {
   environment.systemPackages = with pkgs; [
-    pgpdump
+    # no gui yet
+    # emacs
+    # neovim
+    vim
+    htop
+    tmux
+    minicom
+    screen
+    gnumake
+    gdb
+    
+    ripgrep
+    fd
+    
     parted
     cryptsetup
-
-    yubikey-manager
-    yubikey-personalization
-    yubico-piv-tool
-
-    # Testing
-    ent
-    pwgen
-    rng-tools
-
-    cfssl
-    pcsc-tools
-    tmux
-    htop
-
     btrfs-progs
     btrfs-list
 
+    p7zip
+    unzip
+    # diskonaut-ng
+        
     tree
-    emacs
-    neovim
-    vim
-    nixd
+    # nixd
     # nh
-    nixfmt
-    vim
+    # nixfmt
     jq
     yq
     jc
     sqlite
-    gnumake
-    tmux
-    screen
-    ripgrep
-    fd
-    pass
-    age
-    age-plugin-yubikey
-    age-plugin-tpm
-    agenix-cli
-    sops
-    p7zip
-    unzip
+
     socat
+    
+    pass
+    # age
+    # age-plugin-yubikey
+    # age-plugin-tpm
+    # agenix-cli
+    sops
+    
+    # pgpdump
+    yubikey-manager
+    yubikey-personalization
+    yubico-piv-tool
+    ent
+    pwgen
+    rng-tools
+    cfssl
+    pcsc-tools
   ];
 }
 # Basic Tools:1 ends here
