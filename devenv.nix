@@ -15,8 +15,9 @@
     pkgs.pkg-config
     pkgs.libxml2
     pkgs.jq
+    # pkgs.yq-go
     pkgs.yq
-    pkgs.tomlq
+    # pkgs.tomlq
 
     pkgs.minicom
     pkgs.secretspec
@@ -69,11 +70,31 @@
       #   inherit pkgsKernel;
       # };
 
-      target.host = "root@theia";
+      target.host = "root@theiainstall";
+      # target.host = "root@theiadeploy";
       target.sshOpts = [
         "-o"
         "IdentitiesOnly=yes"
       ];
+      install.copyHostKeys = true;
+      # TODO gen pubkey via just (not secretspec), move to nix/machines/theia
+      # TODO this should really not go here
+      # install.extraFiles."/root/.ssh/authorized_keys".source = "nix/machines/deploy.ed25519.pub";
+
+      # install.extraFiles."/root/.ssh/authorized_keys" = {
+      #   source = "nix/machines/deploy.ed25519.pub";
+      #   mode = "0644";
+      #   owner = "0:0";
+      # };
+
+      # install.secrets = {
+      #   "/var/lib/sops-nix/key.123.txt" = {
+      #     secret = "FOOBAR_AGE_KEY";
+      #     owner = "0:0";
+      #     mode = "0600";
+      #   }
+      # }
+
       nixos = {
         _module.args.rk3588 = { inherit (inputs) nixpkgs; inherit pkgsKernel; };
         imports = [
@@ -89,39 +110,13 @@
           ./nix/machines/users/dc.nix
         ];
         services.openssh.enable = true;
-        users.users.root.openssh.authorizedKeys.keys = [
-          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOgQVDli1owQsEXoQ/94sp8Dm87S4mONeBf5DArT/V+i"
+        users.users.root.openssh.authorizedKeys.keyfiles = [
+          ./nix/machines/deploy.ed25519.pub
+          ./nix/machines/install.ed25519.pub
         ];
-      };
-    };
-    theia-install = let
-      targetSystem = "aarch64-linux";
-      pkgsKernel = import inputs.nixpkgs { system = targetSystem; };
-    in {
-      system = "aarch64-linux";
-      target.host = "root@theia";
-      target.sshOpts = [
-        "-o"
-        "IdentitiesOnly=yes"
-      ];
-      nixos = {
-        _module.args.rk3588 = { inherit (inputs) nixpkgs; inherit pkgsKernel; };
-        imports = [
-          inputs.nixos-rk3588.nixosModules.boards.orangepi5plus.core
-          ./nix/machines/serial.nix
-          ./nix/machines/ssh.nix
-          ./nix/machines/tools.nix
-
-          ./nix/machines/theia/disko.nix
-          ./nix/machines/theia/net.nix
-          ./nix/machines/theia/ssh.nix
-          ./nix/machines/theia/term.nix
-          ./nix/machines/users/dc.nix
-        ];
-        services.openssh.enable = true;
-        users.users.root.openssh.authorizedKeys.keys = [
-          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG1KSX/0Kcoc70rGum3bLz9jXtscpOaV1KNarQ24jPR+"
-        ];
+        # users.users.root.openssh.authorizedKeys.keys = [
+        #   "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOgQVDli1owQsEXoQ/94sp8Dm87S4mONeBf5DArT/V+i"
+        # ];
       };
     };
   };

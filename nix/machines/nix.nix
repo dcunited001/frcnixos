@@ -6,7 +6,7 @@
       allowUnfree = true;
     };
   };
-  
+
   nix.settings = {
     allowed-users = [ "dc" ];
     trusted-users = [ "dc" ];

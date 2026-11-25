@@ -14,3 +14,19 @@
 ** ARM
 *** TODO build ARM install image
 *** TODO build ARM deploy image
+
+** Hardware
+*** Mali OpenCL
+
+# [ "-o" "UserKnownHostsFile=/absolute/path" ];
+# nixos = inputs.nixos-rk3588.nixosConfigurations.orangepi5-cross.extendModules {
+#   modules = [
+#     inputs.nixos-rk3588.nixosModules.mali-g610-opencl
+#     ({ lib, ... }: {
+#       hardware.mali-g610-opencl.enable = true;
+#       nixpkgs.config.allowUnfreePredicate = pkg:
+#       lib.getName pkg == "mali-g610-opencl";
+#     })
+#   ];
+# };
+# nixos = import ./nix/machines/theia/configuration.nix;

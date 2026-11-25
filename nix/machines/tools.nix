@@ -12,10 +12,10 @@
     screen
     gnumake
     gdb
-    
+
     ripgrep
     fd
-    
+
     parted
     cryptsetup
     btrfs-progs
@@ -24,7 +24,7 @@
     p7zip
     unzip
     # diskonaut-ng
-        
+
     tree
     # nixd
     # nh
@@ -35,14 +35,14 @@
     sqlite
 
     socat
-    
+
     pass
     # age
     # age-plugin-yubikey
     # age-plugin-tpm
     # agenix-cli
     sops
-    
+
     # pgpdump
     yubikey-manager
     yubikey-personalization
