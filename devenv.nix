@@ -5,11 +5,7 @@
   config,
   inputs,
   ...
-}:
-let
-  foo = "bar";
-in
-{
+}: {
   # https://github.com/meillaya/kernscope/blob/1c69ae251e3c22c3189d8a2e04cc5b15ea8624c6/devenv.nix
 
   # https://devenv.sh/packages
@@ -61,25 +57,47 @@ in
   # git-hooks.settings.rust.cargoManifestPath = "./Cargo.toml";
 
   machines = {
-    theia = {
-      system = "aarch64-linux";
-      target.host = "theia";
+    theia = let
+      targetSystem = "aarch64-linux";
+      pkgsKernel = import inputs.nixpkgs { system = targetSystem; };
+    in {
+      system = targetSystem;
+      specialArgs.rk3588 = {
+        inherit (inputs) nixpkgs;
+        inherit pkgsKernel;
+      };
+
+      target.host = "root@theia";
       target.sshOpts = [
         "-o"
         "IdentitiesOnly=yes"
       ];
-      # [ "-o" "UserKnownHostsFile=/absolute/path" ];
-      nixos = import ./nix/machines/theia/configuration.nix;
+      nixos = {
+        _module.args.rk3588 = { inherit (inputs) nixpkgs; inherit pkgsKernel; };
+        imports = [
+          inputs.nixos-rk3588.nixosModules.boards.orangepi5plus.core
+          ./nix/machines/theia/disko.nix
+          ./nix/machines/theia/term.nix
+          ./nix/machines/theia/net.nix
+        ];
+      };
+      services.openssh.enable = true;
+      users.users.root.openssh.authorizedKeys.keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOgQVDli1owQsEXoQ/94sp8Dm87S4mONeBf5DArT/V+i"
+      ];
     };
     theia-install = {
       system = "aarch64-linux";
-      target.host = "theia";
+      target.host = "root@theia";
       target.sshOpts = [
         "-o"
         "IdentitiesOnly=yes"
       ];
       # [ "-o" "UserKnownHostsFile=/absolute/path" ];
       nixos = import ./nix/machines/theia/installer.nix;
+      users.users.root.openssh.authorizedKeys.keys = lib.mkForce [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG1KSX/0Kcoc70rGum3bLz9jXtscpOaV1KNarQ24jPR+"
+      ];
     };
   };
 }

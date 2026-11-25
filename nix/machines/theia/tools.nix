@@ -1,4 +1,4 @@
-# [[file:../../../README.org::*Config][Config:1]]
+# [[file:../../../README.org::*OrangePi][OrangePi:1]]
 { pkgs, ... }:
 {
   environment.systemPackages = with pkgs; [
@@ -51,4 +51,4 @@
     socat
   ];
 }
-# Config:1 ends here
+# OrangePi:1 ends here

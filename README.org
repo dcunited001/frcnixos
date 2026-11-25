@@ -109,11 +109,7 @@ Host theia
   config,
   inputs,
   ...
-}:
-let
-  foo = "bar";
-in
-{
+}: {
   # https://github.com/meillaya/kernscope/blob/1c69ae251e3c22c3189d8a2e04cc5b15ea8624c6/devenv.nix
 
   # https://devenv.sh/packages
@@ -165,91 +161,169 @@ in
   # git-hooks.settings.rust.cargoManifestPath = "./Cargo.toml";
 
   machines = {
-    theia = {
-      system = "aarch64-linux";
-      target.host = "theia";
+    theia = let
+      targetSystem = "aarch64-linux";
+      pkgsKernel = import inputs.nixpkgs { system = targetSystem; };
+    in {
+      system = targetSystem;
+      specialArgs.rk3588 = {
+        inherit (inputs) nixpkgs;
+        inherit pkgsKernel;
+      };
+
+      target.host = "root@theia";
       target.sshOpts = [
         "-o"
         "IdentitiesOnly=yes"
       ];
-      # [ "-o" "UserKnownHostsFile=/absolute/path" ];
-      nixos = import ./nix/machines/theia/configuration.nix;
+      nixos = {
+        _module.args.rk3588 = { inherit (inputs) nixpkgs; inherit pkgsKernel; };
+        imports = [
+          inputs.nixos-rk3588.nixosModules.boards.orangepi5plus.core
+          ./nix/machines/theia/disko.nix
+          ./nix/machines/theia/term.nix
+          ./nix/machines/theia/net.nix
+        ];
+      };
+      services.openssh.enable = true;
+      users.users.root.openssh.authorizedKeys.keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOgQVDli1owQsEXoQ/94sp8Dm87S4mONeBf5DArT/V+i"
+      ];
     };
     theia-install = {
       system = "aarch64-linux";
-      target.host = "theia";
+      target.host = "root@theia";
       target.sshOpts = [
         "-o"
         "IdentitiesOnly=yes"
       ];
       # [ "-o" "UserKnownHostsFile=/absolute/path" ];
       nixos = import ./nix/machines/theia/installer.nix;
+      users.users.root.openssh.authorizedKeys.keys = lib.mkForce [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG1KSX/0Kcoc70rGum3bLz9jXtscpOaV1KNarQ24jPR+"
+      ];
     };
   };
 }
 #+end_src
 
-* Machines
-** OrangePi
 
-*** Original Install
+* Machines
+
+** OrangePi
 
 Needs to install as root in order for =kexec= to work
 
-#+begin_src nix :tangle nix/machines/theia/configuration.nix :mkdirp t
+#+begin_src nix :tangle nix/machines/theia/configuration.nix :mkdirp yes
 {
   pkgs,
   lib,
   inputs,
   ...
 }:
-let
-  boot-loader-systemd = {
-    grub.enable = lib.mkForce false;
-    systemd-boot = {
-      enable = true;
-      installDeviceTree = true;
-    };
-    efi.canTouchEfiVariables = false;
-  };
-  boot-loader-u-boot = {
-    grub.enable = false; # mkForce
-    systemd-boot.enable = false;
-  };
-in
 {
-  services.openssh.enable = true;
-  users.users.root.openssh.authorizedKeys.keys = [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOgQVDli1owQsEXoQ/94sp8Dm87S4mONeBf5DArT/V+i"
-  ];
-
   # i2c
   services.ddccontrol.enable = true;
   boot.kernelModules = [ "i2c_dev" ];
   users.groups.i2c = { };
-}
-#+end_src
 
-**** Installer
-
-#+begin_src nix :tangle nix/machines/theia/installer.nix :mkdirp t
-{
-  pkgs,
-  lib,
-  inputs,
-  config,
-  ...
-}: {
-  imports = [ ./configuration.nix ];
-  users.users.root.openssh.authorizedKeys.keys = lib.mkForce [
-    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIG1KSX/0Kcoc70rGum3bLz9jXtscpOaV1KNarQ24jPR+"
+  kernelParams = [
+    "root=UUID=${rootPartitionUUID}" # must override this
+    "rootfstype=btrfs"
   ];
+
+  networking.hostName = "theia";
+  time.timeZone = "America/New_York";
+  i18n.defaultLocale = "en_US.UTF-8";
+  hardware.enableRedistributableFirmware = true;
+
+  services.speechd.enable = false; # too many deps
 }
 #+end_src
 
-***** Disko
+Terminal
 
-#+begin_src nix :tangle nix/machines/theia/disko.nix :mkdirp t
+#+begin_src nix :tangle nix/machines/theia/term.nix :mkdirp yes
+{ pkgs,...  }:
+{
+  users.defaultUserShell = pkgs.zsh;
+
+  programs.zsh = {
+    enable = true;
+    enableLsColors = true;
+    completion.enable = true;
+  };
+
+  programs.bash = {
+    completion.enable = true;
+  };
+
+  programs.git = {
+    enable = true;
+    prompt.enable = true;
+    lfs.enable = true;
+  };
+
+  services.gvfs.enable = true;
+  services.udisks2.enable = true;
+
+  console = {
+    font = "Lat2-Terminus16";
+  };
+
+  services.gpm.enable = true;
+}
+#+end_src
+
+*** Networking
+
+#+begin_src nix :tangle nix/machines/theia/net.nix :mkdirp yes
+{ pkgs, config, ...}:
+{
+  networking.useDHCP = true;
+  networking.networkmanager.enable = true;
+  networking.networkmanager = {
+    dns = "systemd-resolved";
+  };
+
+  services.resolved.enable = true;
+  services.resolved = {
+    settings.Resolve.DNS = config.networking.nameservers;
+  };
+
+  services.avahi.enable = true;
+  services.avahi.publish.enable = true;
+
+  programs.mtr.enable = true;
+  programs.tcpdump.enable = true;
+}
+#+end_src
+
+OpenSSH
+
+#+begin_src nix :tangle nix/machines/theia/ssh.nix :mkdirp yes
+{ pkgs, ... }: {
+  services.openssh.hostKeys = [
+    {
+      bits = 4096;
+      path = "/etc/ssh/ssh_host_rsa_key";
+      type = "rsa";
+    }
+    {
+      path = "/etc/ssh/ssh_host_ed25519_key";
+      type = "ed25519";
+    }
+    {
+      path = "/etc/ssh/ssh_host_ecdsa_key";
+      type = "ecdsa";
+    }
+  ];
+};
+#+end_src
+
+*** Disko
+
+#+begin_src nix :tangle nix/machines/theia/disko.nix :mkdirp yes
 {
   pkgs,
   lib,
@@ -348,25 +422,113 @@ in
     };
   };
 
-  disko.devices.disk.data = {
+  disko.devices.disk.emmc = {
     device = "/dev/disk/by-id/mmc-A3V014_0xb10b87f2";
     type = "disk";
-
     content = {
       type = "gpt";
       partitions = {
-
+        data = {
+          size = "50%";
+          content = {
+            type = "filesystem";
+            format = "extfs";
+            mountpoint = "/data";
+          };
+        };
       };
     };
   };
 }
 #+end_src
 
-**** Config
+** Shared
 
-Tools
+*** Nix
 
-#+begin_src nix :tangle nix/machines/theia/tools.nix :mkdirp t
+Nix
+
+#+begin_src nix :tangle nix/machines/nix.nix :mkdirp yes
+{ pkgs,...  }:
+{
+  nixpkgs = {
+    config = {
+      allowUnfree = true;
+    };
+  };
+};
+#+end_src
+
+
+*** SSH
+
+#+begin_src nix :tangle nix/machines/ssh.nix :mkdirp yes
+{ pkgs, ... }:
+{
+  # https://ryanseipp.com/post/nixos-secure-ssh/
+  # ensure it binds to a specific ip/interface (not 0.0.0.0)
+  services.openssh = {
+    enable = true;
+    settings = {
+      PasswordAuthentication = false;
+      X11Forwarding = false;
+      PermitRootLogin = "no";
+
+      Ciphers = [
+        "chacha20-poly1305@openssh.com"
+        "aes256-gcm@openssh.com"
+      ];
+      Macs = [
+        "hmac-sha2-512-etm@openssh.com"
+        "hmac-sha2-256-etm@openssh.com"
+      ];
+      KexAlgorithms = [
+        "sntrup761x25519-sha512"
+        "sntrup761x25519-sha512@openssh.com"
+        # - drduh/yubikey-guide advises adding this to fix issue with openssh8.9/9.0
+        # - maybe key restrictions https://www.openssh.org/agent-restrict.html
+        "curve25519-sha256"
+        "curve25519-sha256@libssh.org"
+        "diffie-hellman-group-exchange-sha256"
+      ];
+    };
+
+    # SSH defaults for HostKeyAlgorithms, but prefer:
+    #
+    # - (ed25519 > rsa > ecdsa)
+    # - (cert > sk-cert > key > sk-key)
+    extraConfig = ''
+      ClientAliveCountMax 0
+      ClientAliveInterval 300
+
+      AllowTcpForwarding yes
+      # AllowAgentForwarding no
+      # MaxAuthTries 3
+      MaxSessions 4
+      # TCPKeepAlive no
+
+      HostKeyAlgorithms \
+      ssh-ed25519-cert-v01@openssh.com,\
+      rsa-sha2-512-cert-v01@openssh.com,\
+      rsa-sha2-256-cert-v01@openssh.com,\
+      ecdsa-sha2-nistp256-cert-v01@openssh.com,\
+      ecdsa-sha2-nistp384-cert-v01@openssh.com,\
+      ecdsa-sha2-nistp521-cert-v01@openssh.com,\
+      sk-ssh-ed25519-cert-v01@openssh.com,\
+      sk-ecdsa-sha2-nistp256-cert-v01@openssh.com,\
+      ssh-ed25519,\
+      rsa-sha2-512,rsa-sha2-256,\
+      ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,\
+      sk-ecdsa-sha2-nistp256@openssh.com,\
+      sk-ssh-ed25519@openssh.com
+    '';
+  };
+}
+#+end_src
+
+*** Basic Tools
+
+#+begin_src nix :tangle nix/machines/tools.nix :mkdirp yes
 { pkgs, ... }:
 {
   environment.systemPackages = with pkgs; [
@@ -421,3 +583,54 @@ Tools
 }
 #+end_src
 
+* Issues
+** nixos-rk3588
+Ran into some problems getting the flake to work.
+
++ Needed to commit on the flake input and change to =git+file://=, since
+  =buildFHSUserEnv= is now deprecated. This can be done in =devenv.local.yaml=,
+  which facilitates iterating on multiple inputs.
++ It required passing specialArgs, otherwise the =nixpkgs= reference evaluating in
+  the flake input didn't permit =nixpkgs.lib.nixosSystem= (only exposed at the
+  top-level nixpkgs reference)
+
+#+begin_example nix
+    # quick = let rk3588 = import inputs.nixos-rk3588 {  }; # won't evaluate (can't find file)
+    # foo = "bar"; # rk3588.nixosConfigurations;
+    # in { testfdsa = "${ foo }"; }
+
+    quick = let rk3588 = import inputs.nixos-rk3588 { system = pkgs.stdenv.system; };
+      foo = "bar"; # rk3588.nixosConfigurations;
+    in {
+      system = "aarch64-linux";
+      target.host = "fdsaasdf";
+      target.sshOpts = [
+        "-o"
+        "IdentitiesOnly=yes"
+      ];
+      nixos = rk3588.nixosConfigurations.orangepi5plus.config.system.build.sdImage;
+    };
+#+end_example
+
+*** boot
+
+Boot loader is somewhat handled by [[https://github.com/0x0013/nixos-rk3588/blob/rkr7.2-pr-integration/modules/sd-image/orangepi5plus.nix#L13][nixos-rk3588 sd-image/orangepi5plus.nix]]
+
+#+begin_example nix
+{
+  boot = {
+    kernelParams = [
+      "root=UUID=${rootPartitionUUID}" # must override this
+      "rootfstype=ext4"
+    ];
+
+    loader = {
+      grub.enable = lib.mkForce false;
+      generic-extlinux-compatible.enable = lib.mkForce true;
+    };
+  };
+}
+#+end_example
+
+When using disko, you won't really know the UUID of the root partition before it
+starts though.

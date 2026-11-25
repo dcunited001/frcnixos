@@ -97,14 +97,20 @@
     };
   };
 
-  disko.devices.disk.data = {
+  disko.devices.disk.emmc = {
     device = "/dev/disk/by-id/mmc-A3V014_0xb10b87f2";
     type = "disk";
-
     content = {
       type = "gpt";
       partitions = {
-
+        data = {
+          size = "50%";
+          content = {
+            type = "filesystem";
+            format = "extfs";
+            mountpoint = "/data";
+          };
+        };
       };
     };
   };
