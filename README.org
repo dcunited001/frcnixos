@@ -180,9 +180,14 @@ Host theia
         _module.args.rk3588 = { inherit (inputs) nixpkgs; inherit pkgsKernel; };
         imports = [
           inputs.nixos-rk3588.nixosModules.boards.orangepi5plus.core
+          ./nix/machines/serial.nix
+          ./nix/machines/ssh.nix
+          ./nix/machines/tools.nix
+
           ./nix/machines/theia/disko.nix
-          ./nix/machines/theia/term.nix
           ./nix/machines/theia/net.nix
+          ./nix/machines/theia/ssh.nix
+          ./nix/machines/theia/term.nix
         ];
       };
       services.openssh.enable = true;
@@ -222,11 +227,6 @@ Needs to install as root in order for =kexec= to work
   ...
 }:
 {
-  # i2c
-  services.ddccontrol.enable = true;
-  boot.kernelModules = [ "i2c_dev" ];
-  users.groups.i2c = { };
-
   kernelParams = [
     "root=UUID=${rootPartitionUUID}" # must override this
     "rootfstype=btrfs"
@@ -457,6 +457,22 @@ Nix
     };
   };
 };
+#+end_src
+
+
+*** Serial
+
+Serial
+
+#+begin_src nix :tangle nix/machines/serial.nix
+{ ... }:
+{
+  # i2c
+  services.ddccontrol.enable = true;
+  boot.kernelModules = [ "i2c_dev" ];
+  services.ddccontrol.enable = true;
+  users.groups.i2c = { };
+}
 #+end_src
 
 

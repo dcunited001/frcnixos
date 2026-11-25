@@ -6,11 +6,6 @@
   ...
 }:
 {
-  # i2c
-  services.ddccontrol.enable = true;
-  boot.kernelModules = [ "i2c_dev" ];
-  users.groups.i2c = { };
-
   kernelParams = [
     "root=UUID=${rootPartitionUUID}" # must override this
     "rootfstype=btrfs"

@@ -76,9 +76,14 @@
         _module.args.rk3588 = { inherit (inputs) nixpkgs; inherit pkgsKernel; };
         imports = [
           inputs.nixos-rk3588.nixosModules.boards.orangepi5plus.core
+          ./nix/machines/serial.nix
+          ./nix/machines/ssh.nix
+          ./nix/machines/tools.nix
+
           ./nix/machines/theia/disko.nix
-          ./nix/machines/theia/term.nix
           ./nix/machines/theia/net.nix
+          ./nix/machines/theia/ssh.nix
+          ./nix/machines/theia/term.nix
         ];
       };
       services.openssh.enable = true;
