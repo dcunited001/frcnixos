@@ -101,7 +101,7 @@ Careful with generation (not intended to be used this way...)
 
 ** SSH
 
-#+begin_src ssh-config :tangle .ssh/config :mkdirp yes :tangle-mode (identity #o600)
+#+begin_src ssh-config
 Include ~/.ssh/config
 
 Host theiainstall
