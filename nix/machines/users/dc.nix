@@ -33,13 +33,13 @@ in
 
     subUidRanges = [
       {
-        startUid = subuidOffset + (uid * (pow (2 16)));
+        startUid = subuidOffset + (userid * (pow (2 16)));
         count = 65536;
       }
     ];
     subGidRanges = [
       {
-        startGid = subuidOffset + (uid * (pow (2 16)));
+        startGid = subuidOffset + (userid * (pow (2 16)));
         count = 65536;
       }
     ];

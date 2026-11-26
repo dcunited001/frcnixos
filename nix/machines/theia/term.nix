@@ -6,7 +6,7 @@
   programs.zsh = {
     enable = true;
     enableLsColors = true;
-    completion.enable = true;
+    enableCompletion = true;
   };
 
   programs.bash = {

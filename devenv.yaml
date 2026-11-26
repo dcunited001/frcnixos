@@ -1,6 +1,4 @@
 # yaml-language-server: $schema=https://devenv.sh/devenv.schema.json
-secretspec:
-  enable: true
 inputs:
   disko:
     url: github:nix-community/disko
@@ -12,19 +10,22 @@ inputs:
     inputs:
       nixpkgs:
         follows: nixpkgs
-  sops-nix:
-    url: github:Mic92/sops-nix
-    inputs:
-      nixpkgs:
-        follows: nixpkgs
   git-hooks:
     url: github:cachix/git-hooks.nix
     inputs:
       nixpkgs:
         follows: nixpkgs
+  nixos-facter-modules:
+    url: github:nix-community/nixos-facter-modules
   nixos-rk3588:
-    # url: github:0x0013/nixos-rk3588/rkr7.2-pr-integration
     url: git+file:///data/ecto/nixos/iot/rockchip/nixos-rk3588-2?branch=rkr7.2-pr-integration
     inputs:
       nixpkgs:
         follows: nixpkgs
+  sops-nix:
+    url: github:Mic92/sops-nix
+    inputs:
+      nixpkgs:
+        follows: nixpkgs
+secretspec:
+  enable: true

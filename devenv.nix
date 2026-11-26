@@ -64,19 +64,16 @@
     in {
       system = targetSystem;
 
-      # doesn't work
-      # specialArgs.rk3588 = {
-      #   inherit (inputs) nixpkgs;
-      #   inherit pkgsKernel;
-      # };
-
       target.host = "root@theiainstall";
       # target.host = "root@theiadeploy";
       target.sshOpts = [
+        "-F"
+        ".ssh/config"
         "-o"
         "IdentitiesOnly=yes"
       ];
       install.copyHostKeys = true;
+
       # TODO gen pubkey via just (not secretspec), move to nix/machines/theia
       # TODO this should really not go here
       # install.extraFiles."/root/.ssh/authorized_keys".source = "nix/machines/deploy.ed25519.pub";
@@ -108,15 +105,13 @@
           ./nix/machines/theia/ssh.nix
           ./nix/machines/theia/term.nix
           ./nix/machines/users/dc.nix
+          ./nix/machines/users/users.nix
         ];
         services.openssh.enable = true;
         users.users.root.openssh.authorizedKeys.keyfiles = [
           ./nix/machines/deploy.ed25519.pub
           ./nix/machines/install.ed25519.pub
         ];
-        # users.users.root.openssh.authorizedKeys.keys = [
-        #   "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOgQVDli1owQsEXoQ/94sp8Dm87S4mONeBf5DArT/V+i"
-        # ];
       };
     };
   };

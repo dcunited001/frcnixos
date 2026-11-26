@@ -101,18 +101,21 @@ Careful with generation (not intended to be used this way...)
 
 ** SSH
 
-#+begin_src ssh-config :tangle .ssh/config :mkdirp yes
+#+begin_src ssh-config :tangle .ssh/config :mkdirp yes :tangle-mode (identity #o600)
 Include ~/.ssh/config
 
 Host theiainstall
   IdentitiesOnly yes
   User root
-  IdentityFile nix/machines/install.id_ed25519.pub
+  IdentityFile .secrets/frcnixos-test/devmach/MACH_INSTALL_KEY
+  # IdentityFile nix/machines/install.ed25519.pub
 
 Host theiadeploy
   IdentitiesOnly yes
   User root
-  IdentityFile nix/machines/deploy.id_ed25519.pub
+  IdentityFile .secrets/frcnixos-test/devmach/MACH_DEPLOY_KEY
+  IdentityFile .secrets/frcnixos-test/devmach/MACH_INSTALL_KEY
+  # IdentityFile nix/machines/deploy.ed25519.pub
 #+end_src
 
 ** Machines Keys
@@ -188,19 +191,16 @@ Host theiadeploy
     in {
       system = targetSystem;
 
-      # doesn't work
-      # specialArgs.rk3588 = {
-      #   inherit (inputs) nixpkgs;
-      #   inherit pkgsKernel;
-      # };
-
       target.host = "root@theiainstall";
       # target.host = "root@theiadeploy";
       target.sshOpts = [
+        "-F"
+        ".ssh/config"
         "-o"
         "IdentitiesOnly=yes"
       ];
       install.copyHostKeys = true;
+
       # TODO gen pubkey via just (not secretspec), move to nix/machines/theia
       # TODO this should really not go here
       # install.extraFiles."/root/.ssh/authorized_keys".source = "nix/machines/deploy.ed25519.pub";
@@ -284,7 +284,7 @@ Terminal
   programs.zsh = {
     enable = true;
     enableLsColors = true;
-    completion.enable = true;
+    enableCompletion = true;
   };
 
   programs.bash = {
@@ -347,11 +347,11 @@ OpenSSH
       type = "ed25519";
     }
     {
-      path = "/etc/ssh/ssh_host_ecdsa_key";
-      type = "ecdsa";
+      type = "mldsa44-ed25519";
+      path = "/etc/ssh/ssh_host_mldsa44_ed25519_key";
     }
   ];
-};
+}
 #+end_src
 
 *** Users
@@ -637,7 +637,6 @@ Serial
   # i2c
   services.ddccontrol.enable = true;
   boot.kernelModules = [ "i2c_dev" ];
-  services.ddccontrol.enable = true;
   users.groups.i2c = { };
 }
 #+end_src
@@ -655,17 +654,25 @@ Serial
     settings = {
       PasswordAuthentication = false;
       X11Forwarding = false;
-      PermitRootLogin = "no";
+
+      # PermitRootLogin = "no";
+      PermitRootLogin = "yes";
 
       Ciphers = [
         "chacha20-poly1305@openssh.com"
         "aes256-gcm@openssh.com"
+        # "aes128-gcm@openssh.com"
+        # "aes256-ctr"
+        # "aes192-ctr"
+        # "aes128-ctr"
       ];
       Macs = [
         "hmac-sha2-512-etm@openssh.com"
         "hmac-sha2-256-etm@openssh.com"
+        # "umac-128-etm@openssh.com"
       ];
       KexAlgorithms = [
+        "mlkem768x25519-sha256"
         "sntrup761x25519-sha512"
         "sntrup761x25519-sha512@openssh.com"
         # - drduh/yubikey-guide advises adding this to fix issue with openssh8.9/9.0
@@ -770,16 +777,69 @@ Serial
 #+end_src
 
 * Issues
+
+** Kexec
+
+*** On Nixos
+
+I thought this would be simpler to start from NixOS instead of armbian, but the
+first =kexec= failed.
+
+#+begin_quote
+I was also logged into the serial port, which was a bit confusing to suddenly
+realize "the car was supposed to start falling apart around me while it rebuilds
+itself"
+#+end_quote
+
+Anyways, i logged into my router to =show arp= and saw three stale DHCP leases:
+
++ one for =enP4p6= and two for the =enP3p4...=
++ the latter I set aside for installing. so somehow the device got a second IP
+
+=lsblk= showed the files i expected to see. and =nixos-rebuild list-generations=
+looks like it thinks it's a =kexec=
+
+#+begin_quote
+Generation  Build-date           NixOS version       Kernel  Configuration Revision  Specialisation  Current
+1           1970-01-01 00:00:00  kexec-26.11pre-git  7.0.13  Unknown                 []              True
+#+end_quote
+
+Then i ran =nixos-facter=, since that hadn't happened yet.
+
+#+begin_src shell
+nix run --option experimental-features "nix-command flakes" nixpkgs#nixos-facter -- -o facter.json
+
+# from workstation
+scp -F .ssh/config theiainstall:/root/facter.json .machines/theia/facter.manual.json
+#+end_src
+
+At this point, a second attempt for =devenv machines install theia= resumed... at
+which point it picked up the original ip address.
+
+** SSH
+
+*** Organizing Config/Keys
+
++ I think the =sops-nix= approach to managing host keys helps reduce some of the
+  sprawl of keys/configs
++ I wanted to lightly try
 ** nixos-rk3588
+
 Ran into some problems getting the flake to work.
 
-+ Needed to commit on the flake input and change to =git+file://=, since
-  =buildFHSUserEnv= is now deprecated. This can be done in =devenv.local.yaml=,
-  which facilitates iterating on multiple inputs.
+#+begin_example nix
+# Once i had been clued into the need for specialArgs, this didn't work
+specialArgs.rk3588 = {
+  inherit (inputs) nixpkgs;
+  inherit pkgsKernel;
+};
+#+end_example
+
+
 + It required passing specialArgs, otherwise the =nixpkgs= reference evaluating in
   the flake input didn't permit =nixpkgs.lib.nixosSystem= (only exposed at the
   top-level nixpkgs reference)
-
+  
 #+begin_example nix
     # quick = let rk3588 = import inputs.nixos-rk3588 {  }; # won't evaluate (can't find file)
     # foo = "bar"; # rk3588.nixosConfigurations;
@@ -798,6 +858,13 @@ Ran into some problems getting the flake to work.
     };
 }
 #+end_example
+
+Also needed to commit on the flake input and change to =git+file://=, since
+=buildFHSUserEnv= is now deprecated. This can be done in =devenv.local.yaml=, which
+facilitates iterating on multiple inputs.
+
++ Now that it's successfully connected to the =kexec=, it's started evaluating the
+  nix config and thus, it has the =facter.json=
 
 *** boot
 
