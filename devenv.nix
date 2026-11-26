@@ -100,6 +100,7 @@
           ./nix/machines/ssh.nix
           ./nix/machines/tools.nix
 
+          ./nix/machines/theia/boot.nix
           ./nix/machines/theia/disko.nix
           ./nix/machines/theia/net.nix
           ./nix/machines/theia/ssh.nix
@@ -108,7 +109,7 @@
           ./nix/machines/users/users.nix
         ];
         services.openssh.enable = true;
-        users.users.root.openssh.authorizedKeys.keyfiles = [
+        users.users.root.openssh.authorizedKeys.keyFiles = [
           ./nix/machines/deploy.ed25519.pub
           ./nix/machines/install.ed25519.pub
         ];

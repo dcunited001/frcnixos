@@ -1,4 +1,4 @@
-# [[file:../../../README.org::*Users][Users:2]]
+# [[file:../../../README.org::*dc][dc:1]]
 { pkgs, lib, ... }:
 let
   subuidOffset = 1000000;
@@ -11,7 +11,8 @@ in
 {
   users.users.dc = {
     uid = userid;
-    group = "users";
+    # group = "dc";
+    group = "users"; # uid == 100
     extraGroups = [
       "wheel"
       "podman"
@@ -33,16 +34,16 @@ in
 
     subUidRanges = [
       {
-        startUid = subuidOffset + (userid * (pow (2 16)));
+        startUid = subuidOffset + (userid * (pow 2 16));
         count = 65536;
       }
     ];
     subGidRanges = [
       {
-        startGid = subuidOffset + (userid * (pow (2 16)));
+        startGid = subuidOffset + (userid * (pow 2 16));
         count = 65536;
       }
     ];
   };
 }
-# Users:2 ends here
+# dc:1 ends here

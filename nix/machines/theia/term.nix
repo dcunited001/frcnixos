@@ -1,4 +1,4 @@
-# [[file:../../../README.org::*OrangePi][OrangePi:2]]
+# [[file:../../../README.org::*OrangePi][OrangePi:3]]
 { pkgs,...  }:
 {
   users.defaultUserShell = pkgs.zsh;
@@ -28,4 +28,4 @@
 
   services.gpm.enable = true;
 }
-# OrangePi:2 ends here
+# OrangePi:3 ends here

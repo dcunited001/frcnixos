@@ -6,11 +6,6 @@
   ...
 }:
 {
-  kernelParams = [
-    "root=UUID=${rootPartitionUUID}" # must override this
-    "rootfstype=btrfs"
-  ];
-
   networking.hostName = "theia";
   time.timeZone = "America/New_York";
   i18n.defaultLocale = "en_US.UTF-8";

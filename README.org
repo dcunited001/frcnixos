@@ -227,6 +227,7 @@ Host theiadeploy
           ./nix/machines/ssh.nix
           ./nix/machines/tools.nix
 
+          ./nix/machines/theia/boot.nix
           ./nix/machines/theia/disko.nix
           ./nix/machines/theia/net.nix
           ./nix/machines/theia/ssh.nix
@@ -235,7 +236,7 @@ Host theiadeploy
           ./nix/machines/users/users.nix
         ];
         services.openssh.enable = true;
-        users.users.root.openssh.authorizedKeys.keyfiles = [
+        users.users.root.openssh.authorizedKeys.keyFiles = [
           ./nix/machines/deploy.ed25519.pub
           ./nix/machines/install.ed25519.pub
         ];
@@ -260,17 +261,36 @@ Needs to install as root in order for =kexec= to work
   ...
 }:
 {
-  kernelParams = [
-    "root=UUID=${rootPartitionUUID}" # must override this
-    "rootfstype=btrfs"
-  ];
-
   networking.hostName = "theia";
   time.timeZone = "America/New_York";
   i18n.defaultLocale = "en_US.UTF-8";
   hardware.enableRedistributableFirmware = true;
 
   services.speechd.enable = false; # too many deps
+}
+#+end_src
+
+Boot
+
+#+begin_src nix :tangle nix/machines/theia/boot.nix :mkdirp yes
+{ lib, config, pkgs, ... }: let
+  rootPartitionUUID = "14e19a7b-0ae0-484d-9d54-43bd6fdc20c7";
+in
+{
+  boot = {
+    kernelParams = [
+      "root=UUID=${rootPartitionUUID}"
+      "rootfstype=ext4"
+    ];
+    consoleLogLevel = 7;
+
+    loader = {
+      grub.enable = lib.mkForce false;
+      generic-extlinux-compatible.enable = lib.mkForce true;
+    };
+  };
+
+  # TODO: how to specify u-boot here
 }
 #+end_src
 
@@ -313,7 +333,6 @@ Terminal
 #+begin_src nix :tangle nix/machines/theia/net.nix :mkdirp yes
 { pkgs, config, ...}:
 {
-  networking.useDHCP = true;
   networking.networkmanager.enable = true;
   networking.networkmanager = {
     dns = "systemd-resolved";
@@ -354,73 +373,6 @@ OpenSSH
 }
 #+end_src
 
-*** Users
-
-#+begin_src nix :tangle nix/machines/users/users.nix :mkdirp yes
-{ pkgs, ... }: {
-
-  # this is the default, I think
-  users.groups = {
-    users = {
-      name = "users";
-      gid = 1000;
-    };
-  };
-
-}
-#+end_src
-
-
-
-#+begin_src nix :tangle nix/machines/users/dc.nix :mkdirp yes
-{ pkgs, lib, ... }:
-let
-  subuidOffset = 1000000;
-  userid = 1010;
-  pow = lib.fix (
-    self: base: power:
-    if power != 0 then base * (self base (power - 1)) else 1
-  );
-in
-{
-  users.users.dc = {
-    uid = userid;
-    group = "users";
-    extraGroups = [
-      "wheel"
-      "podman"
-      "networkmanager"
-      "docker"
-      "i2c"
-      "audio"
-      "plugdev"
-      "render"
-      "video"
-    ];
-    isNormalUser = true;
-    # continue running containers after logout
-    linger = true;
-
-    openssh.authorizedKeys.keys = [
-      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAb9WIuASHRVkpqpF5tT5AZoOw5lqlY/ycx1UqsWQH7W"
-    ];
-
-    subUidRanges = [
-      {
-        startUid = subuidOffset + (userid * (pow (2 16)));
-        count = 65536;
-      }
-    ];
-    subGidRanges = [
-      {
-        startGid = subuidOffset + (userid * (pow (2 16)));
-        count = 65536;
-      }
-    ];
-  };
-}
-#+end_src
-
 *** Disko
 
 #+begin_src nix :tangle nix/machines/theia/disko.nix :mkdirp yes
@@ -429,7 +381,9 @@ in
   lib,
   inputs,
   ...
-}:
+}: let
+  rootPartitionUUID = "12345678-0ae0-484d-9d54-1234567890ab";
+in
 {
   disko.devices.disk.main = {
     device = "/dev/disk/by-id/nvme-eui.e8238fa6bf530001001b448b4128b292";
@@ -449,6 +403,7 @@ in
         };
         root = {
           size = "75%";
+          uuid = rootPartitionUUID;
           content = {
             type = "btrfs";
             extraArgs = [ "-f" ]; # Override existing partition
@@ -538,6 +493,73 @@ in
         };
       };
     };
+  };
+}
+#+end_src
+
+*** Users
+
+#+begin_src nix :tangle nix/machines/users/users.nix :mkdirp yes
+{ pkgs, ... }: {
+
+  users.groups = {
+    # users = {
+    #   name = "dc";
+    #   gid = 1000;
+    # };
+  };
+
+}
+#+end_src
+
+**** dc
+
+#+begin_src nix :tangle nix/machines/users/dc.nix :mkdirp yes
+{ pkgs, lib, ... }:
+let
+  subuidOffset = 1000000;
+  userid = 1010;
+  pow = lib.fix (
+    self: base: power:
+    if power != 0 then base * (self base (power - 1)) else 1
+  );
+in
+{
+  users.users.dc = {
+    uid = userid;
+    # group = "dc";
+    group = "users"; # uid == 100
+    extraGroups = [
+      "wheel"
+      "podman"
+      "networkmanager"
+      "docker"
+      "i2c"
+      "audio"
+      "plugdev"
+      "render"
+      "video"
+    ];
+    isNormalUser = true;
+    # continue running containers after logout
+    linger = true;
+
+    openssh.authorizedKeys.keys = [
+      "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAb9WIuASHRVkpqpF5tT5AZoOw5lqlY/ycx1UqsWQH7W"
+    ];
+
+    subUidRanges = [
+      {
+        startUid = subuidOffset + (userid * (pow 2 16));
+        count = 65536;
+      }
+    ];
+    subGidRanges = [
+      {
+        startGid = subuidOffset + (userid * (pow 2 16));
+        count = 65536;
+      }
+    ];
   };
 }
 #+end_src
@@ -782,6 +804,8 @@ Serial
 
 *** On Nixos
 
+**** DHCP Issues
+
 I thought this would be simpler to start from NixOS instead of armbian, but the
 first =kexec= failed.
 
@@ -815,6 +839,14 @@ scp -F .ssh/config theiainstall:/root/facter.json .machines/theia/facter.manual.
 
 At this point, a second attempt for =devenv machines install theia= resumed... at
 which point it picked up the original ip address.
+
+**** Remote Builders
+
+The local workstation needs =boot.binfmt.emulatedSystems = [ "aarch64-linux" ];=
+in order to build for =devenv machine install $remote_arm_host=. This requires a
+restart IIRC (like the appimage thing).
+
+***** TODO fix remote build
 
 ** SSH
 

@@ -1,7 +1,6 @@
 # [[file:../../../README.org::*Networking][Networking:1]]
 { pkgs, config, ...}:
 {
-  networking.useDHCP = true;
   networking.networkmanager.enable = true;
   networking.networkmanager = {
     dns = "systemd-resolved";

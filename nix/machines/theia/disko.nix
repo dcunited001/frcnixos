@@ -4,7 +4,9 @@
   lib,
   inputs,
   ...
-}:
+}: let
+  rootPartitionUUID = "12345678-0ae0-484d-9d54-1234567890ab";
+in
 {
   disko.devices.disk.main = {
     device = "/dev/disk/by-id/nvme-eui.e8238fa6bf530001001b448b4128b292";
@@ -24,6 +26,7 @@
         };
         root = {
           size = "75%";
+          uuid = rootPartitionUUID;
           content = {
             type = "btrfs";
             extraArgs = [ "-f" ]; # Override existing partition
