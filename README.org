@@ -232,15 +232,13 @@ Host theiadeploy
           ./nix/machines/theia/ssh.nix
           ./nix/machines/theia/term.nix
           ./nix/machines/users/dc.nix
+          ./nix/machines/users/users.nix
         ];
         services.openssh.enable = true;
         users.users.root.openssh.authorizedKeys.keyfiles = [
           ./nix/machines/deploy.ed25519.pub
           ./nix/machines/install.ed25519.pub
         ];
-        # users.users.root.openssh.authorizedKeys.keys = [
-        #   "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOgQVDli1owQsEXoQ/94sp8Dm87S4mONeBf5DArT/V+i"
-        # ];
       };
     };
   };
@@ -358,19 +356,36 @@ OpenSSH
 
 *** Users
 
-#+begin_src nix :tangle nix/machines/users/dc.nix :mkdirp yes
+#+begin_src nix :tangle nix/machines/users/users.nix :mkdirp yes
 { pkgs, ... }: {
 
+  # this is the default, I think
   users.groups = {
-    dc = {
-      name = "dc";
+    users = {
+      name = "users";
       gid = 1000;
     };
   };
 
+}
+#+end_src
+
+
+
+#+begin_src nix :tangle nix/machines/users/dc.nix :mkdirp yes
+{ pkgs, lib, ... }:
+let
+  subuidOffset = 1000000;
+  userid = 1010;
+  pow = lib.fix (
+    self: base: power:
+    if power != 0 then base * (self base (power - 1)) else 1
+  );
+in
+{
   users.users.dc = {
-    uid = 1000;
-    group = "dc";
+    uid = userid;
+    group = "users";
     extraGroups = [
       "wheel"
       "podman"
@@ -390,26 +405,21 @@ OpenSSH
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAb9WIuASHRVkpqpF5tT5AZoOw5lqlY/ycx1UqsWQH7W"
     ];
 
-
-    # startUGid = (1000000 + (n * lib.custom.pow (2 16)));
     subUidRanges = [
       {
-        startUid = 1000000;
+        startUid = subuidOffset + (userid * (pow (2 16)));
         count = 65536;
       }
     ];
     subGidRanges = [
       {
-        startGid = 1000000;
+        startGid = subuidOffset + (userid * (pow (2 16)));
         count = 65536;
       }
     ];
   };
-
 }
 #+end_src
-
-
 
 *** Disko
 
@@ -534,6 +544,19 @@ OpenSSH
 
 ** Shared
 
+*** Subuid
+
+#+begin_src nix :tangle nix/lib/subuid.nix :mkdirp yes
+{ pkgs, lib, ...  }: let
+  pow = lib.fix (self: base: power:
+    if power != 0 then base * (self base (power - 1)) else 1);
+in
+{
+
+}
+#+end_src
+
+
 *** Nix
 
 Nix
@@ -604,7 +627,6 @@ Nix
 
 };
 #+end_src
-
 *** Serial
 
 Serial
@@ -762,7 +784,7 @@ Ran into some problems getting the flake to work.
     # quick = let rk3588 = import inputs.nixos-rk3588 {  }; # won't evaluate (can't find file)
     # foo = "bar"; # rk3588.nixosConfigurations;
     # in { testfdsa = "${ foo }"; }
-
+{
     quick = let rk3588 = import inputs.nixos-rk3588 { system = pkgs.stdenv.system; };
       foo = "bar"; # rk3588.nixosConfigurations;
     in {
@@ -774,6 +796,7 @@ Ran into some problems getting the flake to work.
       ];
       nixos = rk3588.nixosConfigurations.orangepi5plus.config.system.build.sdImage;
     };
+}
 #+end_example
 
 *** boot

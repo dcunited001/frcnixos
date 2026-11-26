@@ -1,16 +1,17 @@
-# [[file:../../../README.org::*Users][Users:1]]
-{ pkgs, ... }: {
-
-  users.groups = {
-    dc = {
-      name = "dc";
-      gid = 1000;
-    };
-  };
-
+# [[file:../../../README.org::*Users][Users:2]]
+{ pkgs, lib, ... }:
+let
+  subuidOffset = 1000000;
+  userid = 1010;
+  pow = lib.fix (
+    self: base: power:
+    if power != 0 then base * (self base (power - 1)) else 1
+  );
+in
+{
   users.users.dc = {
-    uid = 1000;
-    group = "dc";
+    uid = userid;
+    group = "users";
     extraGroups = [
       "wheel"
       "podman"
@@ -30,21 +31,18 @@
       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAb9WIuASHRVkpqpF5tT5AZoOw5lqlY/ycx1UqsWQH7W"
     ];
 
-
-    # startUGid = (1000000 + (n * lib.custom.pow (2 16)));
     subUidRanges = [
       {
-        startUid = 1000000;
+        startUid = subuidOffset + (uid * (pow (2 16)));
         count = 65536;
       }
     ];
     subGidRanges = [
       {
-        startGid = 1000000;
+        startGid = subuidOffset + (uid * (pow (2 16)));
         count = 65536;
       }
     ];
   };
-
 }
-# Users:1 ends here
+# Users:2 ends here
