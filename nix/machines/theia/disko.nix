@@ -4,7 +4,8 @@
   lib,
   inputs,
   ...
-}: let
+}:
+let
   rootPartitionUUID = "12345678-0ae0-484d-9d54-1234567890ab";
 in
 {
@@ -25,7 +26,7 @@ in
           };
         };
         root = {
-          size = "75%";
+          size = "192G";
           uuid = rootPartitionUUID;
           content = {
             type = "btrfs";
@@ -107,10 +108,10 @@ in
       type = "gpt";
       partitions = {
         data = {
-          size = "50%";
+          size = "128G";
           content = {
             type = "filesystem";
-            format = "extfs";
+            format = "ext4";
             mountpoint = "/data";
           };
         };
