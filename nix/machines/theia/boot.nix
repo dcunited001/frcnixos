@@ -12,7 +12,7 @@ in
   boot = {
     kernelParams = [
       "root=UUID=${rootPartitionUUID}"
-      "rootfstype=ext4"
+      "rootfstype=btrfs"
     ];
     consoleLogLevel = 7;
 
