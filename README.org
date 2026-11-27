@@ -1,13 +1,5 @@
 #+title: Readme
 
-
-#+begin_src shell
-devenv update # to update locked flake inputs
-
-devenv inputs add nixos-facter-modules github:nix-community/nixos-facter-modules
-#+end_src
-
-
 * Just
 
 #+begin_src just :tangle Justfile
@@ -220,14 +212,18 @@ Host theiadeploy
       # }
 
       nixos = {
-        _module.args.rk3588 = { inherit (inputs) nixpkgs; inherit pkgsKernel; };
+        # _module.args.rk3588 = { # (vendor)
+        #   inherit (inputs) nixpkgs;
+        #   inherit pkgsKernel;
+        # };
         imports = [
-          inputs.nixos-rk3588.nixosModules.boards.orangepi5plus.core
+          # inputs.nixos-rk3588.nixosModules.boards.orangepi5plus.core # (vendor)
           ./nix/machines/serial.nix
           ./nix/machines/ssh.nix
           ./nix/machines/tools.nix
 
           ./nix/machines/theia/boot.nix
+          # ./nix/machines/theia/boot-vendor.nix # (vendor)
           ./nix/machines/theia/disko.nix
           ./nix/machines/theia/net.nix
           ./nix/machines/theia/ssh.nix
@@ -270,17 +266,20 @@ Needs to install as root in order for =kexec= to work
 }
 #+end_src
 
-Boot
+*** Boot
+
+**** Upstream
 
 #+begin_src nix :tangle nix/machines/theia/boot.nix :mkdirp yes
 { lib, config, pkgs, ... }: let
   rootPartitionUUID = "14e19a7b-0ae0-484d-9d54-43bd6fdc20c7";
+  uboot = pkgs.ubootOrangePi5Plus;
 in
 {
   boot = {
     kernelParams = [
       "root=UUID=${rootPartitionUUID}"
-      "rootfstype=ext4"
+      "rootfstype=btrfs"
     ];
     consoleLogLevel = 7;
 
@@ -294,7 +293,31 @@ in
 }
 #+end_src
 
-Terminal
+**** Vendor
+
+#+begin_src nix :tangle nix/machines/theia/boot-vendor.nix :mkdirp yes
+{ lib, config, pkgs, ... }: let
+  rootPartitionUUID = "14e19a7b-0ae0-484d-9d54-43bd6fdc20c7";
+in
+{
+  boot = {
+    kernelParams = [
+      "root=UUID=${rootPartitionUUID}"
+      "rootfstype=btrfs"
+    ];
+    consoleLogLevel = 7;
+
+    loader = {
+      grub.enable = lib.mkForce false;
+      generic-extlinux-compatible.enable = lib.mkForce true;
+    };
+  };
+
+  # TODO: how to specify u-boot here
+}
+#+end_src
+
+*** Terminal
 
 #+begin_src nix :tangle nix/machines/theia/term.nix :mkdirp yes
 { pkgs,...  }:
@@ -855,6 +878,7 @@ restart IIRC (like the appimage thing).
 + I think the =sops-nix= approach to managing host keys helps reduce some of the
   sprawl of keys/configs
 + I wanted to lightly try
+
 ** nixos-rk3588
 
 Ran into some problems getting the flake to work.
@@ -898,7 +922,7 @@ facilitates iterating on multiple inputs.
 + Now that it's successfully connected to the =kexec=, it's started evaluating the
   nix config and thus, it has the =facter.json=
 
-*** boot
+*** Configure boot
 
 Boot loader is somewhat handled by [[https://github.com/0x0013/nixos-rk3588/blob/rkr7.2-pr-integration/modules/sd-image/orangepi5plus.nix#L13][nixos-rk3588 sd-image/orangepi5plus.nix]]
 
@@ -920,3 +944,19 @@ Boot loader is somewhat handled by [[https://github.com/0x0013/nixos-rk3588/blob
 
 When using disko, you won't really know the UUID of the root partition before it
 starts though.
+
+** Booting
+
+
+I accidentally set ~rootfstype=ext4~ instead of ~btrfs~. The kernel build took 6
+hours.
+
+#+begin_src shell
+# interrpt uboot over the serial console, then check bootargs
+printenv bootargs bootcmd
+
+# must set the boot args cleanly (no duplicate flags)
+setenv bootargs ${bootargs} rootfstype=btrfs
+boot
+#+end_src
+
