@@ -11,6 +11,9 @@ in
 {
   users.users.dc = {
     uid = userid;
+    # TODO: generate password: mkpasswd -m scrypt
+    # password = builtins.warn "Please change the password in configuration.nix!" "TODO";
+
     # group = "dc";
     group = "users"; # uid == 100
     extraGroups = [

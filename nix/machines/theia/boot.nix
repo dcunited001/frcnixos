@@ -1,14 +1,12 @@
-# [[file:../../../README.org::*OrangePi][OrangePi:2]]
-{
-  lib,
-  config,
-  pkgs,
-  ...
-}:
-let
+# [[file:../../../README.org::*Upstream][Upstream:1]]
+{ lib, config, pkgs, modulesPath, ... }: let
   rootPartitionUUID = "14e19a7b-0ae0-484d-9d54-43bd6fdc20c7";
+  uboot = pkgs.ubootOrangePi5Plus;
 in
 {
+
+  # pass into devenv.nix instead?
+  imports = [ "${modulesPath}/installer/sd-card/sd-image.nix" ];
   boot = {
     kernelParams = [
       "root=UUID=${rootPartitionUUID}"
@@ -22,6 +20,34 @@ in
     };
   };
 
-  # TODO: how to specify u-boot here
+  #   sd-card.img
+  #   │
+  #   ├── 32MB gap: contains u-boot code at correct offsets (where board expects it)
+  #   ├── 1MB RPi-specific "firmware" partition (unused; mounts to /boot/firmware)
+  #   └── / 
+  #       ├── /boot/extlinux: how u-boot finds the kernel to boot
+  #       └── /boot/nixos: all installed kernels, referenced by extlinux
+
+  sdImage = {
+    inherit rootPartitionUUID;
+    compressImage = true;
+
+    populateFirmwareCommands = "";
+    firmwareSize = 1; # MiB
+    firmwarePartitionName = "DUMMY_UNUSED";
+    firmwarePartitionOffset = 32; # needed to fit idbloader.img & u-boot.itb
+
+    populateRootCommands = ''
+      ${config.boot.loader.generic-extlinux-compatible.populateCmd} -c ${config.system.build.toplevel} -d ./files/boot
+    '';
+
+    postBuildCommands = ''
+      dd if=${uboot}/idbloader.img of=$img seek=64 conv=fsync,notrunc
+      dd if=${uboot}/u-boot.itb of=$img seek=16384 conv=fsync,notrunc
+    '';
+  };
+
+  fileSystems."/".fsType = lib.mkForce "btrfs";
+  fileSystems."/".device = lib.mkForce rootPartitionUUID;
 }
-# OrangePi:2 ends here
+# Upstream:1 ends here

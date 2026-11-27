@@ -2,11 +2,18 @@
 { pkgs, ... }:
 {
   environment.systemPackages = with pkgs; [
+    fastfetch
+    lm_sensors
+
+    mtdutils
+    i2c-tools
+    
     # no gui yet
     # emacs
     # neovim
+
     vim
-    htop
+    btop
     tmux
     minicom
     screen

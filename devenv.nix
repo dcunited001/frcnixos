@@ -64,8 +64,8 @@
     in {
       system = targetSystem;
 
-      target.host = "root@theiainstall";
-      # target.host = "root@theiadeploy";
+      # target.host = "root@theiainstall";
+      target.host = "root@theiadeploy";
       target.sshOpts = [
         "-F"
         ".ssh/config"
@@ -93,14 +93,19 @@
       # }
 
       nixos = {
-        _module.args.rk3588 = { inherit (inputs) nixpkgs; inherit pkgsKernel; };
+        # _module.args.rk3588 = { # (vendor)
+        #   inherit (inputs) nixpkgs;
+        #   inherit pkgsKernel;
+        # };
         imports = [
-          inputs.nixos-rk3588.nixosModules.boards.orangepi5plus.core
+          # inputs.nixos-rk3588.nixosModules.boards.orangepi5plus.core # (vendor)
           ./nix/machines/serial.nix
           ./nix/machines/ssh.nix
           ./nix/machines/tools.nix
 
+          ./nix/machines/theia/kernel.nix
           ./nix/machines/theia/boot.nix
+          # ./nix/machines/theia/boot-vendor.nix # (vendor)
           ./nix/machines/theia/disko.nix
           ./nix/machines/theia/net.nix
           ./nix/machines/theia/ssh.nix

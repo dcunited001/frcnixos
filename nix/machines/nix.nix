@@ -1,12 +1,6 @@
 # [[file:../../README.org::*Nix][Nix:1]]
 { pkgs,...  }:
 {
-  nixpkgs = {
-    config = {
-      allowUnfree = true;
-    };
-  };
-
   nix.settings = {
     allowed-users = [ "dc" ];
     trusted-users = [ "dc" ];
