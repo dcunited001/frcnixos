@@ -23,6 +23,5 @@
       "swapaccount=1"
     ];
   };
-  hardware.enableRedistributableFirmware = true;
 }
 # Upstream:2 ends here

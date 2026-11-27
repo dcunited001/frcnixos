@@ -287,8 +287,8 @@ See [[https://github.com/0x0013/nixos-rk3588/blob/rkr7.2-pr-integration/examples
 nixpkgs [[https://github.com/NixOS/nixpkgs/blob/658515812992f5867f211dc132b3ad154d26d5ac/nixos/modules/installer/sd-card/sd-image.nix#L37][nixos/modules/installer/sd-card/sd-image.nix#L37]].
 
 #+begin_src nix :tangle nix/machines/theia/boot.nix :mkdirp yes
-{ lib, config, pkgs, modulesPath, ... }: let
-  rootPartitionUUID = "14e19a7b-0ae0-484d-9d54-43bd6fdc20c7";
+{ lib, config, pkgs, inputs, modulesPath, ... }: let
+  rootPartitionUUID = "12345678-0ae0-484d-9d54-1234567890ab";
   uboot = pkgs.ubootOrangePi5Plus;
 in
 {
@@ -307,6 +307,13 @@ in
       generic-extlinux-compatible.enable = lib.mkForce true;
     };
   };
+
+  hardware.enableRedistributableFirmware = true;
+  hardware.deviceTree.name = "rockchip/rk3588-orangepi-5-plus.dtb";
+  boot.initrd.availableKernelModules = [
+    "ahci_dwc"
+    "phy_rockchip_naneng_combphy"
+  ];
 
   #   sd-card.img
   #   │
@@ -367,7 +374,6 @@ Upstream Kernel
       "swapaccount=1"
     ];
   };
-  hardware.enableRedistributableFirmware = true;
 }
 #+end_src
 
@@ -377,7 +383,7 @@ Disko
 
 #+begin_src nix :tangle nix/machines/theia/boot-vendor.nix :mkdirp yes
 { lib, config, pkgs, ... }: let
-  rootPartitionUUID = "14e19a7b-0ae0-484d-9d54-43bd6fdc20c7";
+  rootPartitionUUID = "12345678-0ae0-484d-9d54-1234567890ab";
 in
 {
   boot = {

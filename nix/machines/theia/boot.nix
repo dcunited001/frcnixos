@@ -1,6 +1,6 @@
 # [[file:../../../README.org::*Upstream][Upstream:1]]
-{ lib, config, pkgs, modulesPath, ... }: let
-  rootPartitionUUID = "14e19a7b-0ae0-484d-9d54-43bd6fdc20c7";
+{ lib, config, pkgs, inputs, modulesPath, ... }: let
+  rootPartitionUUID = "12345678-0ae0-484d-9d54-1234567890ab";
   uboot = pkgs.ubootOrangePi5Plus;
 in
 {
@@ -19,6 +19,13 @@ in
       generic-extlinux-compatible.enable = lib.mkForce true;
     };
   };
+
+  hardware.enableRedistributableFirmware = true;
+  hardware.deviceTree.name = "rockchip/rk3588-orangepi-5-plus.dtb";
+  boot.initrd.availableKernelModules = [
+    "ahci_dwc"
+    "phy_rockchip_naneng_combphy"
+  ];
 
   #   sd-card.img
   #   │
